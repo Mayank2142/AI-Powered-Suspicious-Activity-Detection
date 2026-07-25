@@ -6,7 +6,10 @@ import type {
   CustomerDetail,
   CustomerFilters,
   CustomerPage,
-  DatasetsResponse,
+  DatasetInfo,
+  DatasetInspection,
+  DatasetSwitchResult,
+  DatasetUploadResult,
   HealthResponse,
   InvestigationRecord,
   InvestigationSummary,
@@ -38,14 +41,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
+      const headers = new Headers(init?.headers)
+      if (!(init?.body instanceof FormData) && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json')
+      }
       const response = await fetch(`${API_BASE}${path}`, {
         ...init,
-        headers: {
-          'Content-Type': 'application/json',
-          ...init?.headers,
-        },
+        headers,
       })
-      if (response.ok) return response.json() as Promise<T>
+      if (response.ok) {
+        if (response.status === 204) return undefined as T
+        return response.json() as Promise<T>
+      }
 
       let detail = `Request failed with status ${response.status}`
       try {
@@ -71,10 +78,10 @@ export function checkHealth() {
   return request<HealthResponse>('/health')
 }
 
-export function runQuery(query: string) {
+export function runQuery(query: string, datasetId?: string) {
   return request<AgentResponse>('/query', {
     method: 'POST',
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, dataset_id: datasetId }),
   })
 }
 
@@ -156,7 +163,123 @@ export function getPolicy() {
 }
 
 export function getDatasets() {
-  return request<DatasetsResponse>('/datasets')
+  return request<DatasetInfo[]>('/datasets')
+}
+
+export function inspectDataset(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  return request<DatasetInspection>('/datasets/inspect', {
+    method: 'POST',
+    body: form,
+  })
+}
+
+export function uploadDataset(
+  file: File,
+  displayName: string,
+  datasetType: DatasetInfo['dataset_type'],
+) {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('display_name', displayName)
+  form.append('dataset_type', datasetType)
+  return request<DatasetUploadResult>('/datasets/upload', {
+    method: 'POST',
+    body: form,
+  })
+}
+
+export function activateDataset(datasetId: string) {
+  return request<DatasetSwitchResult>(
+    `/datasets/${encodeURIComponent(datasetId)}/activate`,
+    { method: 'POST' },
+  )
+}
+
+export function deleteDataset(datasetId: string) {
+  return request<void>(`/datasets/${encodeURIComponent(datasetId)}`, {
+    method: 'DELETE',
+  })
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+async function downloadFile(path: string, filename: string) {
+  const response = await fetch(`${API_BASE}${path}`)
+  if (!response.ok) {
+    let message = `Export failed with status ${response.status}`
+    try {
+      const payload = (await response.json()) as { detail?: string }
+      if (payload.detail) message = payload.detail
+    } catch {
+      // Keep the status message for non-JSON upstream failures.
+    }
+    throw new Error(message)
+  }
+  const blob = await response.blob()
+  const href = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = href
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(href)
+}
+
+export function exportEntities(
+  investigationId: string,
+  format: 'csv' | 'json' | 'xlsx',
+) {
+  return downloadFile(
+    `/export/entities?format=${format}&investigation_id=${encodeURIComponent(investigationId)}`,
+    `sentinel_entities_${today()}.${format}`,
+  )
+}
+
+export function exportInvestigation(
+  investigationId: string,
+  format: 'json' | 'md' | 'pdf',
+) {
+  return downloadFile(
+    `/export/investigation/${encodeURIComponent(investigationId)}?format=${format}`,
+    `investigation_${investigationId}.${format}`,
+  )
+}
+
+export function exportTrace(investigationId: string, format: 'csv' | 'json') {
+  return downloadFile(
+    `/export/trace/${encodeURIComponent(investigationId)}?format=${format}`,
+    `trace_${investigationId}.${format}`,
+  )
+}
+
+export function exportSar(
+  entityId: string,
+  investigationId: string,
+  format: 'txt' | 'pdf',
+) {
+  return downloadFile(
+    `/export/sar/${encodeURIComponent(entityId)}?format=${format}&investigation_id=${encodeURIComponent(investigationId)}`,
+    `sar_draft_${entityId}.${format}`,
+  )
+}
+
+export function exportModelCard(format: 'json' | 'md' | 'pdf') {
+  return downloadFile(
+    `/export/model-card?format=${format}`,
+    `sentinel_model_card.${format}`,
+  )
+}
+
+export function exportAudit(format: 'csv' | 'json') {
+  return downloadFile(
+    `/export/audit?format=${format}`,
+    `sentinel_audit_${today()}.${format}`,
+  )
 }
 
 function queryString(values: object) {

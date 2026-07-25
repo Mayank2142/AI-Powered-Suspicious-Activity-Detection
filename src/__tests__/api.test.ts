@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getCustomers, getPolicy, getTransactions, runQuery } from '../api'
+import {
+  activateDataset,
+  getCustomers,
+  getPolicy,
+  getTransactions,
+  inspectDataset,
+  runQuery,
+} from '../api'
 import type { AgentResponse } from '../types'
 
 const responsePayload: AgentResponse = {
@@ -73,6 +80,66 @@ describe('runQuery', () => {
 
     expect(result.intent.pattern_type).toBe('structuring')
     expect(result.plan.steps[0]).toBe('data_loader')
+  })
+
+  it('threads an explicit dataset workspace into an investigation', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(responsePayload), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await runQuery('Find structuring', 'ds_bank_01')
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.parse(init.body)).toEqual({
+      query: 'Find structuring',
+      dataset_id: 'ds_bank_01',
+    })
+  })
+
+  it('uploads inspection data as multipart without overriding its boundary', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({
+        schema_detected: 'generic_transactions',
+        column_map: {},
+        columns: [],
+        preview: [],
+        warnings: [],
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await inspectDataset(new File(['timestamp,amount'], 'bank.csv', { type: 'text/csv' }))
+
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/datasets/inspect')
+    expect(init.body).toBeInstanceOf(FormData)
+    expect((init.headers as Headers).has('Content-Type')).toBe(false)
+  })
+
+  it('encodes dataset activation identifiers', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({
+        previous_dataset_id: null,
+        active_dataset_id: 'ds/bank',
+        row_count: 100,
+        message: 'active',
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await activateDataset('ds/bank')
+
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/datasets/ds%2Fbank/activate')
   })
 
   it('throws the API detail on a non-200 response', async () => {

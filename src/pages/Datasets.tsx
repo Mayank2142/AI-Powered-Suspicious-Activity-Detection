@@ -1,43 +1,115 @@
-import { useEffect, useState } from 'react'
-import { getDatasets } from '../api'
-import type { DatasetCard } from '../types'
-
-function DatasetPanel({ dataset }: { dataset: DatasetCard }) {
-  return (
-    <article className="dataset-card">
-      <header><div><span className="section-kicker">{dataset.dataset_id}</span><h2>{dataset.name}</h2></div><span className="model-status model-status--live">{dataset.status}</span></header>
-      <p>{dataset.role}</p>
-      <div className="dataset-metrics">
-        <div><strong>{dataset.rows.toLocaleString()}</strong><span>Rows</span></div>
-        <div><strong>{dataset.laundering_rows.toLocaleString()}</strong><span>Known laundering</span></div>
-        {dataset.laundering_rate_pct !== undefined ? <div><strong>{dataset.laundering_rate_pct.toFixed(2)}%</strong><span>Label prevalence</span></div> : null}
-        {dataset.unique_accounts !== undefined ? <div><strong>{dataset.unique_accounts.toLocaleString()}</strong><span>Unique accounts</span></div> : null}
-        {dataset.normal_sample_rows !== undefined ? <div><strong>{dataset.normal_sample_rows.toLocaleString()}</strong><span>Normal sample</span></div> : null}
-        {dataset.typology_count !== undefined ? <div><strong>{dataset.typology_count}</strong><span>Typologies</span></div> : null}
-      </div>
-      <dl className="dataset-lineage">
-        <div><dt>Source</dt><dd>{dataset.source}</dd></div>
-        {dataset.date_min ? <div><dt>Coverage</dt><dd>{dataset.date_min} → {dataset.date_max}</dd></div> : null}
-      </dl>
-    </article>
-  )
-}
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { activateDataset, deleteDataset, getDatasets } from '../api'
+import DatasetCard from '../components/DatasetCard'
+import UploadModal from '../components/UploadModal'
+import type { DatasetInfo, DatasetUploadResult } from '../types'
 
 export default function Datasets() {
-  const [datasets, setDatasets] = useState<{ primary: DatasetCard; knowledge: DatasetCard } | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  useEffect(() => {
-    getDatasets().then(setDatasets).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Unable to load dataset registry'))
-  }, [])
+  const navigate = useNavigate()
+  const [datasets, setDatasets] = useState<DatasetInfo[]>([])
+  const [showUpload, setShowUpload] = useState(false)
+  const [busy, setBusy] = useState('')
+  const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  async function refresh() {
+    setLoading(true)
+    try {
+      setDatasets(await getDatasets())
+      setError('')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to load dataset registry')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { void refresh() }, [])
+
+  const active = useMemo(
+    () => datasets.filter((dataset) => dataset.is_active),
+    [datasets],
+  )
+  const available = useMemo(
+    () => datasets.filter((dataset) => !dataset.is_active),
+    [datasets],
+  )
+
+  async function activate(dataset: DatasetInfo): Promise<boolean> {
+    setBusy(dataset.dataset_id); setError(''); setNotice('')
+    try {
+      const result = await activateDataset(dataset.dataset_id)
+      setNotice(result.message)
+      await refresh()
+      return true
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to activate dataset')
+      return false
+    } finally {
+      setBusy('')
+    }
+  }
+
+  async function analyze(dataset: DatasetInfo) {
+    if (!dataset.is_active && !(await activate(dataset))) return
+    navigate('/')
+  }
+
+  async function remove(dataset: DatasetInfo) {
+    if (!window.confirm(`Delete the isolated workspace “${dataset.display_name}”? This cannot be undone.`)) return
+    setBusy(dataset.dataset_id); setError('')
+    try {
+      await deleteDataset(dataset.dataset_id)
+      setNotice(`${dataset.display_name} was deleted.`)
+      await refresh()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to delete dataset')
+    } finally {
+      setBusy('')
+    }
+  }
+
+  function uploaded(result: DatasetUploadResult) {
+    setShowUpload(false)
+    setNotice(`${result.display_name} was validated and ingested with ${result.row_count.toLocaleString()} rows.`)
+    void refresh()
+  }
+
+  const card = (dataset: DatasetInfo) => (
+    <DatasetCard
+      key={dataset.dataset_id}
+      dataset={dataset}
+      busy={busy === dataset.dataset_id}
+      onActivate={(item) => void activate(item)}
+      onAnalyze={(item) => void analyze(item)}
+      onDelete={(item) => void remove(item)}
+    />
+  )
+
   return (
-    <main className="workspace-page">
+    <main className="workspace-page workspace-page--wide">
       <header className="workspace-page__header">
-        <div><span className="eyebrow">Data governance</span><h1>Datasets</h1><p>Active analytical sources, coverage, label context, and the distinct role each dataset plays.</p></div>
-        <span className="metric-pill">2 governed sources</span>
+        <div><span className="eyebrow">Data governance</span><h1>Dataset workspaces</h1><p>Import, validate, isolate, activate, and analyze institutional data without mixing evidence histories.</p></div>
+        <button className="primary-action" onClick={() => setShowUpload(true)}>Upload dataset</button>
       </header>
-      {error ? <div className="workspace-error">{error}</div> : null}
-      {datasets ? <div className="dataset-grid"><DatasetPanel dataset={datasets.primary} /><DatasetPanel dataset={datasets.knowledge} /></div> : !error ? <div className="workspace-loading">Loading dataset registry…</div> : null}
-      <section className="data-governance-note"><strong>Separation of duties</strong><p>HI-Small is the active investigation dataset. SAML-D is used for typology grounding and model training context; it is not presented as live production evidence.</p></section>
+      <section className="dataset-control-strip">
+        <div><span>Registered</span><strong>{datasets.length}</strong></div>
+        <div><span>Active workspaces</span><strong>{active.length}</strong></div>
+        <div><span>Total governed rows</span><strong>{datasets.reduce((sum, item) => sum + item.row_count, 0).toLocaleString()}</strong></div>
+      </section>
+      {notice ? <div className="workspace-notice" role="status">{notice}</div> : null}
+      {error ? <div className="workspace-error" role="alert">{error}</div> : null}
+      {loading ? <div className="workspace-loading">Loading governed workspaces…</div> : null}
+      {!loading ? (
+        <>
+          <section className="dataset-section"><div className="dataset-section__heading"><span className="section-kicker">Active analytical context</span><h2>Active datasets</h2></div><div className="dataset-grid">{active.map(card)}</div></section>
+          <section className="dataset-section"><div className="dataset-section__heading"><span className="section-kicker">Isolated and available</span><h2>Other datasets</h2></div>{available.length ? <div className="dataset-grid">{available.map(card)}</div> : <p className="panel-empty">No inactive datasets. Upload another institutional source to create an isolated workspace.</p>}</section>
+        </>
+      ) : null}
+      <section className="data-governance-note"><strong>Isolation and human control</strong><p>Each upload is validated, fingerprinted, and stored in its own DuckDB schema. Activating a primary workspace changes the evidence source for future analyses; existing investigations remain immutable.</p></section>
+      {showUpload ? <UploadModal onClose={() => setShowUpload(false)} onUploaded={uploaded} /> : null}
     </main>
   )
 }

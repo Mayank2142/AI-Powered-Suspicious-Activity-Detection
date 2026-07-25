@@ -387,3 +387,59 @@
   .queue-list__head, .queue-row { min-width: 640px; }
   .transaction-filter-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Governed dataset workspaces */
+.sidebar-environment > span:last-child { min-width: 0; display: grid; gap: 0.12rem; color: #8da19e; }
+.sidebar-environment strong { color: #a7f3d0; font-size: 0.54rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.dataset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dataset-card--active { border-color: rgba(16, 185, 129, 0.25); box-shadow: inset 3px 0 rgba(16, 185, 129, 0.55); }
+.dataset-metrics { grid-template-columns: repeat(3, 1fr); }
+.dataset-state { padding: 0.28rem 0.48rem; color: #94a3b8; border-radius: 999px; background: rgba(148, 163, 184, 0.08); font-size: 0.55rem; font-weight: 700; }
+.dataset-state--active { color: #6ee7b7; background: rgba(16, 185, 129, 0.1); }
+.dataset-actions { display: flex; flex-wrap: wrap; gap: 0.42rem; margin-top: 0.9rem; }
+.dataset-actions button, .primary-action, .upload-modal button { min-height: 34px; padding: 0.46rem 0.7rem; color: #e0e7ff; border: 1px solid rgba(99, 102, 241, 0.28); border-radius: 7px; background: rgba(99, 102, 241, 0.16); font: inherit; font-size: 0.61rem; font-weight: 700; cursor: pointer; }
+.dataset-actions button:disabled, .upload-modal button:disabled { opacity: 0.45; cursor: wait; }
+.dataset-actions .button-secondary, .upload-modal .button-secondary { color: #aab3c3; border-color: rgba(148, 163, 184, 0.14); background: rgba(255, 255, 255, 0.025); }
+.dataset-actions .button-danger { margin-left: auto; color: #fca5a5; border-color: rgba(239, 68, 68, 0.18); background: rgba(239, 68, 68, 0.06); }
+.dataset-section { margin-top: 1.35rem; }
+.dataset-section__heading h2 { margin: 0.3rem 0 0; color: var(--text-secondary); font-size: 0.88rem; }
+.dataset-control-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65rem; margin-top: 1rem; }
+.dataset-control-strip div { display: grid; gap: 0.2rem; padding: 0.75rem; border: 1px solid rgba(99, 102, 241, 0.1); border-radius: 9px; background: rgba(99, 102, 241, 0.035); }
+.dataset-control-strip span { color: #657087; font-size: 0.55rem; text-transform: uppercase; }
+.dataset-control-strip strong { color: #c7d2fe; font-size: 0.92rem; }
+.workspace-notice { margin-top: 0.8rem; padding: 0.65rem 0.75rem; color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.16); border-radius: 8px; background: rgba(16, 185, 129, 0.045); font-size: 0.63rem; }
+
+/* Upload inspection and validation */
+.modal-layer { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 1rem; background: rgba(3, 7, 18, 0.78); backdrop-filter: blur(8px); }
+.upload-modal { width: min(760px, 100%); max-height: calc(100vh - 2rem); overflow: auto; padding: 1.15rem; border: 1px solid rgba(129, 140, 248, 0.23); border-radius: 14px; background: #0d1320; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45); }
+.upload-modal > header { display: flex; align-items: start; justify-content: space-between; }
+.upload-modal h2 { margin: 0.28rem 0 0; color: var(--text-primary); font-size: 1.05rem; }
+.upload-modal .close-button { width: 34px; padding: 0; color: #94a3b8; border-color: transparent; background: transparent; font-size: 1rem; }
+.upload-dropzone { min-height: 135px; display: grid; place-items: center; align-content: center; gap: 0.35rem; margin-top: 1rem; color: #8f9aad; border: 1px dashed rgba(129, 140, 248, 0.32); border-radius: 11px; background: rgba(99, 102, 241, 0.045); text-align: center; cursor: pointer; }
+.upload-dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.upload-dropzone strong { color: #c7d2fe; font-size: 0.76rem; }
+.upload-dropzone span { color: #657087; font-size: 0.61rem; }
+.upload-fields { display: grid; grid-template-columns: 1fr 0.65fr; gap: 0.65rem; margin-top: 0.85rem; }
+.upload-fields label { display: grid; gap: 0.3rem; color: #657087; font-size: 0.56rem; font-weight: 700; text-transform: uppercase; }
+.upload-fields input, .upload-fields select { min-height: 38px; padding: 0.5rem 0.6rem; color: #b7c0cf; border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 7px; background: #090f1a; font: inherit; }
+.upload-progress { margin-top: 0.75rem; color: #a5b4fc; font-size: 0.63rem; }
+.schema-preview { margin-top: 0.85rem; padding: 0.8rem; border: 1px solid rgba(148, 163, 184, 0.1); border-radius: 10px; background: rgba(255, 255, 255, 0.014); }
+.schema-preview > header { display: flex; justify-content: space-between; gap: 1rem; color: #657087; font-size: 0.58rem; }
+.schema-preview > header div { display: grid; gap: 0.2rem; }
+.schema-preview > header strong { color: #a7f3d0; font-size: 0.72rem; }
+.mapping-list { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.65rem; }
+.mapping-list span { padding: 0.3rem 0.42rem; color: #7f8a9e; border-radius: 5px; background: rgba(99, 102, 241, 0.055); font-size: 0.54rem; }
+.mapping-list strong { color: #a5b4fc; }
+.preview-scroll { margin-top: 0.7rem; overflow-x: auto; }
+.preview-scroll table { width: 100%; border-collapse: collapse; color: #8f9aad; font-size: 0.54rem; }
+.preview-scroll th, .preview-scroll td { max-width: 150px; overflow: hidden; padding: 0.35rem; border-bottom: 1px solid rgba(148, 163, 184, 0.07); text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.schema-warning { margin: 0.55rem 0 0; color: #fcd34d; font-size: 0.56rem; }
+.upload-modal form > footer { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+
+@media (max-width: 1050px) {
+  .dataset-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .dataset-control-strip, .upload-fields { grid-template-columns: 1fr; }
+}

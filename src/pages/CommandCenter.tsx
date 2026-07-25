@@ -7,7 +7,8 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { checkHealth, runQuery } from '../api'
+import { checkHealth, exportSar, getDatasets, runQuery } from '../api'
+import ExportPanel from '../components/ExportPanel'
 import RiskContributionBar from '../components/RiskContributionBar'
 import TransactionEvidenceList from '../components/TransactionEvidenceList'
 import { saveInvestigation } from '../store/investigations'
@@ -66,7 +67,7 @@ function formatFilterValue(value: unknown) {
   return String(value)
 }
 
-function Header({ status }: { status: ApiStatus }) {
+function Header({ status, datasetName }: { status: ApiStatus; datasetName: string }) {
   const statusLabel =
     status === 'online' ? 'API connected' : status === 'offline' ? 'API unavailable' : 'Checking API'
 
@@ -84,7 +85,7 @@ function Header({ status }: { status: ApiStatus }) {
         </div>
       </div>
       <div className="header-status">
-        <span className="phase-badge">Phase A · Investigation workspace</span>
+        <span className="phase-badge">Evidence · {datasetName}</span>
         <span className={`api-status api-status--${status}`}>
           <span className="status-dot" aria-hidden="true" />
           {statusLabel}
@@ -428,11 +429,15 @@ function FlaggedTable({
 
 function EntityDetailDrawer({
   entity,
+  investigationId,
   onClose,
 }: {
   entity: FlaggedEntity | null
+  investigationId?: string | null
   onClose: () => void
 }) {
+  const [exportError, setExportError] = useState('')
+  const [exporting, setExporting] = useState('')
   useEffect(() => {
     if (!entity) return
     function closeOnEscape(event: KeyboardEvent) {
@@ -443,6 +448,19 @@ function EntityDetailDrawer({
   }, [entity, onClose])
 
   if (!entity) return null
+
+  async function downloadSar(format: 'txt' | 'pdf') {
+    if (!entity || !investigationId) return
+    setExporting(format)
+    setExportError('')
+    try {
+      await exportSar(entity.entity_id, investigationId, format)
+    } catch (reason) {
+      setExportError(reason instanceof Error ? reason.message : 'SAR export failed')
+    } finally {
+      setExporting('')
+    }
+  }
 
   return (
     <div className="drawer-layer" role="presentation" onMouseDown={onClose}>
@@ -490,6 +508,15 @@ function EntityDetailDrawer({
         <section>
           <span className="drawer-label">SAR draft</span>
           <p>{entity.sar_draft || 'No SAR draft was generated.'}</p>
+        </section>
+        <section className="drawer-export">
+          <span className="drawer-label">Export this entity</span>
+          <p>Drafts require qualified human review before any filing.</p>
+          <div className="export-actions">
+            <button disabled={!investigationId || Boolean(exporting)} onClick={() => void downloadSar('txt')}>SAR Draft TXT</button>
+            <button disabled={!investigationId || Boolean(exporting)} onClick={() => void downloadSar('pdf')}>SAR Draft PDF</button>
+          </div>
+          {exportError ? <span className="export-error">{exportError}</span> : null}
         </section>
         <section className="citation-box">
           <span className="drawer-label">Evidence citation</span>
@@ -596,6 +623,7 @@ function ResultsPanel({
         </div>
         <span className="result-query">“{response.query}”</span>
       </div>
+      <ExportPanel investigationId={response.investigation_id} />
       <div className="overview-grid">
         <IntentSummary response={response} />
         <ExecutionTrace steps={response.execution_trace} />
@@ -670,11 +698,22 @@ function CommandCenter() {
   const [response, setResponse] = useState<AgentResponse | null>(null)
   const [selectedEntity, setSelectedEntity] = useState<FlaggedEntity | null>(null)
   const [error, setError] = useState('')
+  const [activeDataset, setActiveDataset] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     checkHealth()
       .then(() => setApiStatus('online'))
       .catch(() => setApiStatus('offline'))
+    getDatasets()
+      .then((datasets) => {
+        const active = datasets.find(
+          (dataset) => dataset.dataset_type === 'primary' && dataset.is_active,
+        )
+        setActiveDataset(
+          active ? { id: active.dataset_id, name: active.display_name } : null,
+        )
+      })
+      .catch(() => setActiveDataset(null))
   }, [])
 
   async function submitQuery(nextQuery: string) {
@@ -684,7 +723,7 @@ function CommandCenter() {
     setError('')
     setSelectedEntity(null)
     try {
-      const nextResponse = await runQuery(trimmed)
+      const nextResponse = await runQuery(trimmed, activeDataset?.id)
       setResponse(nextResponse)
       saveInvestigation(nextResponse)
       setApiStatus('online')
@@ -712,7 +751,7 @@ function CommandCenter() {
 
   return (
     <div className="command-center">
-      <Header status={apiStatus} />
+      <Header status={apiStatus} datasetName={activeDataset?.name ?? 'No active dataset'} />
       <QueryPanel
         query={query}
         loading={loading}
@@ -742,7 +781,11 @@ function CommandCenter() {
           </div>
         </section>
       )}
-      <EntityDetailDrawer entity={selectedEntity} onClose={() => setSelectedEntity(null)} />
+      <EntityDetailDrawer
+        entity={selectedEntity}
+        investigationId={response?.investigation_id}
+        onClose={() => setSelectedEntity(null)}
+      />
       <footer>
         <span>Sentinel AML · Decision-support system</span>
         <span>Human review required before reporting</span>

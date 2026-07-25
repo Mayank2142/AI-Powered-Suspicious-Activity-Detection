@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
-import { getQueueSummary } from '../api'
+import { NavLink, useLocation } from 'react-router-dom'
+import { getDatasets, getQueueSummary } from '../api'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Command center', icon: '⌂' },
@@ -15,7 +15,9 @@ const NAV_ITEMS = [
 ]
 
 export default function Sidebar() {
+  const location = useLocation()
   const [openAlerts, setOpenAlerts] = useState<number | null>(null)
+  const [activeDataset, setActiveDataset] = useState('Loading dataset…')
 
   useEffect(() => {
     let active = true
@@ -28,10 +30,20 @@ export default function Sidebar() {
       .catch(() => {
         if (active) setOpenAlerts(null)
       })
+    getDatasets()
+      .then((datasets) => {
+        if (active) {
+          setActiveDataset(
+            datasets.find((dataset) => dataset.dataset_type === 'primary' && dataset.is_active)?.display_name
+              ?? 'No active primary dataset',
+          )
+        }
+      })
+      .catch(() => { if (active) setActiveDataset('Dataset unavailable') })
     return () => {
       active = false
     }
-  }, [])
+  }, [location.pathname])
 
   return (
     <aside className="workspace-sidebar">
@@ -42,7 +54,7 @@ export default function Sidebar() {
 
       <div className="sidebar-environment">
         <span className="status-dot status-dot--live" />
-        Decision support online
+        <span><strong>Active evidence</strong>{activeDataset}</span>
       </div>
 
       <nav aria-label="Primary workspace navigation">

@@ -148,6 +148,8 @@ export interface GraphResult {
 
 export interface AgentResponse {
   investigation_id?: string | null
+  dataset_id?: string | null
+  dataset_name?: string | null
   query: string
   intent: IntentResult
   plan: PlanResult
@@ -226,6 +228,8 @@ export type AlertDisposition =
 
 export interface InvestigationSummary {
   investigation_id: string
+  dataset_id?: string | null
+  dataset_name?: string | null
   query: string
   intent: string
   pattern_type: string | null
@@ -307,25 +311,48 @@ export interface PolicyResponse {
   limitations: string[]
 }
 
-export interface DatasetCard {
+export interface DatasetInfo {
   dataset_id: string
-  name: string
-  source: string
-  rows: number
-  laundering_rows: number
-  status: string
-  role: string
-  laundering_rate_pct?: number
-  date_min?: string
-  date_max?: string
-  unique_accounts?: number
-  normal_sample_rows?: number
-  typology_count?: number
+  display_name: string
+  source_file: string | null
+  dataset_type: 'primary' | 'knowledge' | 'kyc'
+  file_size_bytes: number
+  row_count: number
+  laundering_count: number
+  laundering_rate: number
+  date_min: string | null
+  date_max: string | null
+  schema_version: string
+  md5_fingerprint: string | null
+  ingested_at: string
+  is_active: boolean
+  notes: string
+  column_map: Record<string, string>
+  schema_detected: string
 }
 
-export interface DatasetsResponse {
-  primary: DatasetCard
-  knowledge: DatasetCard
+export interface DatasetUploadResult {
+  dataset_id: string
+  display_name: string
+  row_count: number
+  schema_detected: string
+  warnings: string[]
+  eda_summary: Record<string, unknown>
+}
+
+export interface DatasetInspection {
+  schema_detected: string
+  column_map: Record<string, string>
+  columns: string[]
+  preview: Record<string, unknown>[]
+  warnings: string[]
+}
+
+export interface DatasetSwitchResult {
+  previous_dataset_id: string | null
+  active_dataset_id: string
+  row_count: number
+  message: string
 }
 
 export type CustomerRiskLabel = RiskLabel | 'unscored'
