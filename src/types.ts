@@ -327,3 +327,87 @@ export interface DatasetsResponse {
   primary: DatasetCard
   knowledge: DatasetCard
 }
+
+export type CustomerRiskLabel = RiskLabel | 'unscored'
+
+export interface CustomerSummary {
+  account_id: string
+  primary_bank: string
+  outbound_count: number
+  inbound_count: number
+  total_sent: number
+  total_received: number
+  max_transaction: number
+  distinct_counterparties: number
+  first_seen: string
+  last_seen: string
+  alert_count: number
+  open_alert_count: number
+  max_risk_score: number | null
+  risk_label: CustomerRiskLabel
+}
+
+export interface CounterpartySummary {
+  account_id: string
+  transaction_count: number
+  total_amount: number
+  direction: 'inbound' | 'outbound'
+}
+
+export interface CustomerDetail {
+  summary: CustomerSummary
+  payment_formats: Record<string, number>
+  currencies: string[]
+  known_laundering_transactions: number
+  top_counterparties: CounterpartySummary[]
+  alerts: AlertQueueItem[]
+}
+
+export interface CustomerPage {
+  items: CustomerSummary[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface CustomerFilters {
+  search?: string
+  risk_label?: CustomerRiskLabel | ''
+  limit?: number
+  offset?: number
+}
+
+export interface TransactionRecord {
+  transaction_id: string
+  timestamp: string
+  from_bank: string
+  from_account: string
+  to_bank: string
+  to_account: string
+  amount_paid: number
+  amount_received: number
+  paying_currency: string
+  receiving_currency: string
+  payment_format: string
+  is_laundering: boolean
+}
+
+export interface TransactionPage {
+  items: TransactionRecord[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface TransactionFilters {
+  account_id?: string
+  direction?: 'both' | 'inbound' | 'outbound'
+  payment_format?: string
+  min_amount?: number
+  max_amount?: number
+  date_from?: string
+  date_to?: string
+  laundering_only?: boolean
+  limit?: number
+  offset?: number
+}

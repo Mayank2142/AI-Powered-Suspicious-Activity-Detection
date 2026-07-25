@@ -3,6 +3,9 @@ import type {
   AlertDisposition,
   AlertQueueItem,
   AuditResponse,
+  CustomerDetail,
+  CustomerFilters,
+  CustomerPage,
   DatasetsResponse,
   HealthResponse,
   InvestigationRecord,
@@ -12,6 +15,8 @@ import type {
   PolicyResponse,
   QueueResponse,
   QueueSummary,
+  TransactionFilters,
+  TransactionPage,
 } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api'
@@ -152,4 +157,33 @@ export function getPolicy() {
 
 export function getDatasets() {
   return request<DatasetsResponse>('/datasets')
+}
+
+function queryString(values: object) {
+  const params = new URLSearchParams()
+  Object.entries(values).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.set(key, String(value))
+    }
+  })
+  const encoded = params.toString()
+  return encoded ? `?${encoded}` : ''
+}
+
+export function getCustomers(filters: CustomerFilters = {}) {
+  return request<CustomerPage>(`/customers${queryString(filters)}`)
+}
+
+export function getCustomer(accountId: string) {
+  return request<CustomerDetail>(
+    `/customers/${encodeURIComponent(accountId)}`,
+  )
+}
+
+export function getTransactions(filters: TransactionFilters = {}) {
+  return request<TransactionPage>(`/transactions${queryString(filters)}`)
+}
+
+export function getTransactionPaymentFormats() {
+  return request<{ items: string[] }>('/transactions/payment-formats')
 }

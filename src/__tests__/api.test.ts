@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getPolicy, runQuery } from '../api'
+import { getCustomers, getPolicy, getTransactions, runQuery } from '../api'
 import type { AgentResponse } from '../types'
 
 const responsePayload: AgentResponse = {
@@ -120,5 +120,42 @@ describe('runQuery', () => {
     await expect(policyPromise).resolves.toMatchObject({ mode: 'read_only' })
     expect(fetchMock).toHaveBeenCalledTimes(2)
     vi.useRealTimers()
+  })
+
+  it('encodes customer evidence filters', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ items: [], total: 0, limit: 25, offset: 0 }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await getCustomers({ search: '8000 A', risk_label: 'high', limit: 25 })
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/api/customers?search=8000+A&risk_label=high&limit=25',
+    )
+  })
+
+  it('encodes bounded transaction filters', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ items: [], total: 0, limit: 50, offset: 0 }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await getTransactions({
+      account_id: 'A/1',
+      direction: 'outbound',
+      min_amount: 8_000,
+      laundering_only: true,
+    })
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/api/transactions?account_id=A%2F1&direction=outbound&min_amount=8000&laundering_only=true',
+    )
   })
 })
