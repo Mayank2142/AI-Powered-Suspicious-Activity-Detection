@@ -10,11 +10,33 @@ const sitesWorker: Plugin = {
       fileName: 'server/index.js',
       source: `const worker = {
   async fetch(request, env) {
-    const response = await env.ASSETS.fetch(request);
-    if (response.status !== 404 || request.method !== "GET") return response;
-    const url = new URL(request.url);
-    url.pathname = "/";
-    return env.ASSETS.fetch(new Request(url, request));
+    const incoming = new URL(request.url);
+    if (incoming.pathname.startsWith("/api/")) {
+      if (!env.API_BASE_URL) {
+        return Response.json(
+          { detail: "Sentinel production API is not configured." },
+          { status: 503, headers: { "Cache-Control": "no-store" } },
+        );
+      }
+      const upstream = new URL(env.API_BASE_URL);
+      upstream.pathname = incoming.pathname.replace(/^\\/api/, "");
+      upstream.search = incoming.search;
+      return fetch(new Request(upstream, request));
+    }
+    let response = await env.ASSETS.fetch(request);
+    if (response.status === 404 && request.method === "GET") {
+      const url = incoming;
+      url.pathname = "/";
+      response = await env.ASSETS.fetch(new Request(url, request));
+    }
+    if (response.headers.get("content-type")?.includes("text/html")) {
+      const html = (await response.text()).replaceAll(
+        "__SENTINEL_OG_URL__",
+        new URL("/og.png", request.url).toString(),
+      );
+      return new Response(html, { status: response.status, headers: response.headers });
+    }
+    return response;
   },
 };
 export default worker;
