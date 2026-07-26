@@ -23,45 +23,6 @@ An agentic AML investigation workspace that converts a natural-language question
 
 ---
 
-## Judge fast track
-
-| If you have... | Start here |
-| --- | --- |
-| 30 seconds | Read [The 30-second pitch](#the-30-second-pitch) |
-| 90 seconds | Review [Why this project stands out](#why-this-project-stands-out) and [System architecture](#system-architecture) |
-| 3 minutes | Follow the [Three-query judge demo](#three-query-judge-demo) |
-| 5 minutes | Inspect [Problem statement coverage](#problem-statement-coverage), [AML detection strategy](#aml-detection-strategy), and [Judge checklist](#judge-checklist) |
-| Hands-on evaluation | Use [Quick start](#quick-start), then run [Test and verification](#test-and-verification) |
-
-## The 30-second pitch
-
-Traditional AML monitoring is noisy. Static rules generate large alert volumes, investigators receive little context, and sophisticated structuring or layering behavior can still evade threshold-only detection.
-
-Sentinel changes the operating model:
-
-1. An analyst asks a question in plain language.
-2. The agent extracts intent, entities, filters, thresholds, and typology.
-3. A dynamic planner builds the smallest defensible toolchain.
-4. Rules, statistics, ML, graph analytics, and EDA are invoked selectively.
-5. Detector evidence is converted into calibrated risk.
-6. Every flag receives a grounded explanation and a `Monitor`, `Review`, or `Report` recommendation.
-7. The full plan, tool trace, data snapshot, model version, policy, and analyst action are retained.
-
-The result is not just another anomaly model. It is an end-to-end AML investigation system built for adaptive analysis, analyst confidence, and auditability.
-
-## Why this project stands out
-
-| Common hackathon implementation | Sentinel AML |
-| --- | --- |
-| Fixed pipeline that always runs every model | Query-aware planner selects and orders only relevant tools |
-| One opaque anomaly score | Rules + statistics + ML + optional graph signals with visible contributions |
-| Generic LLM explanation | Evidence-grounded narrative checked against computed signals |
-| Dataset labels presented as predictions | Source labels are kept separate from system decisions |
-| Alert list with no workflow | Assignment, notes, disposition, SLA context, escalation, and audit trail |
-| Hard-coded demo data | Governed upload, schema inspection, fingerprinting, isolation, and activation |
-| Black-box model page | Feature contract, training provenance, contamination, normalization, and drift |
-| Failure when the LLM is unavailable | Deterministic parsing, planning, and explanation fallbacks |
-
 ## At a glance
 
 | Capability | Implementation |
@@ -304,8 +265,8 @@ This design prevents a fluent explanation from inventing a signal that the syste
 
 | Dataset | Role |
 | --- | --- |
-| **HI-Small Transactions** | Operational evidence: accounts, counterparties, direction, time, amount, currency, country, payment format |
-| **SAML-D** | Typology grounding, model calibration, normal-behavior baseline, feature distribution, validation context |
+| **[IBM Transactions for Anti Money Laundering — HI-Small](https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml/code)** | Operational evidence: accounts, counterparties, direction, time, amount, currency, country, and payment format |
+| **[SAML-D: Synthetic Transaction Monitoring Dataset](https://www.kaggle.com/datasets/berkanoztas/synthetic-transaction-monitoring-dataset-aml/data)** | Typology grounding, model calibration, normal-behavior baseline, feature distribution, and validation context |
 | **Uploaded CSV/XLSX** | Isolated institutional evidence workspace after schema inspection and fingerprinting |
 
 Important safeguards:
@@ -604,24 +565,6 @@ Show transactions above $500,000
 |-- requirements.txt
 `-- README.md
 ```
-
-## Judge checklist
-
-| What to inspect | Where to find it |
-| --- | --- |
-| Natural-language parsing | Command center -> Intent and scope |
-| Dynamic orchestration | Plan reasoning and execution trace |
-| Selective tools | Run/skipped state and skip reason per tool |
-| Query-aware loading | Extracted filters and bounded-row metrics |
-| AML feature values | Entity drawer and model feature contract |
-| Hybrid detection | Risk contribution breakdown |
-| Ranked findings | Flagged entities table |
-| Explainability | Grounded explanation and citation |
-| Escalation | Monitor/Review/Report action |
-| Human workflow | Review queue |
-| Model governance | Model intelligence and drift |
-| Data governance | Dataset workspaces |
-| Reproducibility | Investigation history and audit trail |
 
 ## Evaluation rubric map
 
