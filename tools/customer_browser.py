@@ -71,6 +71,40 @@ def _repository(
     )
 
 
+def _entity_alerts(
+    connection: duckdb.DuckDBPyConnection,
+    account_id: str,
+):
+    required = {
+        "alert_id",
+        "entity_id",
+        "investigation_id",
+        "risk_score",
+        "risk_label",
+        "escalation_action",
+        "saml_d_typology",
+        "created_at",
+        "sla_hours",
+        "assigned_to",
+        "status",
+        "disposition",
+        "notes",
+    }
+    columns = {
+        row[0]
+        for row in connection.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'main' AND table_name = 'alert_queue'
+            """
+        ).fetchall()
+    }
+    if not required.issubset(columns):
+        return []
+    return list_entity_alerts(account_id, conn=connection)
+
+
 def list_customers(
     *,
     search: str | None = None,
@@ -123,7 +157,7 @@ def get_customer(
                 )
                 for row in profile.top_counterparties
             ],
-            alerts=list_entity_alerts(account_id, conn=database),
+            alerts=_entity_alerts(database, account_id),
         )
     finally:
         if own_connection:

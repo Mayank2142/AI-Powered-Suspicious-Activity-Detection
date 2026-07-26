@@ -113,6 +113,7 @@ def test_customer_detail_consolidates_activity_and_counterparties(
     assert detail.summary.inbound_count == 1
     assert detail.known_laundering_transactions == 1
     assert detail.payment_formats == {"Wire": 1, "ACH": 1}
+    assert detail.alerts == []
     assert {
         item.account_id for item in detail.top_counterparties
     } == {"ACC-002", "ACC-003"}
