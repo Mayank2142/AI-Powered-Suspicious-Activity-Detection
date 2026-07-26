@@ -6,19 +6,35 @@ import {
   useLocation,
 } from 'react-router-dom'
 import { checkHealth, getDatasets, getQueueSummary } from './api'
-import { AuthProvider } from './auth/AuthProvider'
-import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
-import Login from './pages/Login'
+import { useRevealOnScroll } from './hooks/useMotion'
 import AppRoutes from './router/AppRoutes'
 import './App.css'
 import './Workspace.css'
 import './styles/tokens.css'
 import './styles/shell.css'
+import './styles/motion.css'
+import './styles/redesign.css'
 import type { ApiStatus } from './types'
 
 export { ExecutionTrace } from './components/ExecutionTrace'
+
+/** Initialize theme on app boot (before first paint) */
+function initTheme() {
+  try {
+    const stored = localStorage.getItem('aml-theme')
+    if (stored === 'dark' || stored === 'light') {
+      document.documentElement.setAttribute('data-theme', stored)
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light')
+    }
+  } catch {
+    document.documentElement.setAttribute('data-theme', 'light')
+  }
+}
+
+initTheme()
 
 interface WorkspaceState {
   apiStatus: ApiStatus
@@ -32,10 +48,27 @@ const INITIAL_WORKSPACE_STATE: WorkspaceState = {
   openAlerts: null,
 }
 
+function isCompactNavigation() {
+  return typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 780px)').matches
+}
+
 function ApplicationShell() {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [compactNavigation, setCompactNavigation] = useState(isCompactNavigation)
   const [workspaceState, setWorkspaceState] = useState(INITIAL_WORKSPACE_STATE)
+  useRevealOnScroll(location.pathname)
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const media = window.matchMedia('(max-width: 780px)')
+    const syncNavigationMode = () => setCompactNavigation(media.matches)
+    syncNavigationMode()
+    media.addEventListener('change', syncNavigationMode)
+    return () => media.removeEventListener('change', syncNavigationMode)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -78,8 +111,32 @@ function ApplicationShell() {
     setSidebarOpen(false)
   }, [location.pathname])
 
+  const navigationVisible = compactNavigation ? sidebarOpen : !sidebarCollapsed
+
+  function toggleNavigation() {
+    if (compactNavigation) {
+      setSidebarOpen((current) => !current)
+      return
+    }
+    setSidebarCollapsed((current) => !current)
+  }
+
+  function closeNavigation() {
+    if (compactNavigation) {
+      setSidebarOpen(false)
+      return
+    }
+    setSidebarCollapsed(true)
+  }
+
   return (
-    <div className={`workspace-shell${sidebarOpen ? ' workspace-shell--nav-open' : ''}`}>
+    <div
+      className={[
+        'workspace-shell',
+        sidebarOpen ? 'workspace-shell--nav-open' : '',
+        sidebarCollapsed ? 'workspace-shell--sidebar-collapsed' : '',
+      ].filter(Boolean).join(' ')}
+    >
       <a className="skip-link" href="#workspace-main">
         Skip to workspace content
       </a>
@@ -87,7 +144,8 @@ function ApplicationShell() {
         activeDataset={workspaceState.activeDataset}
         openAlerts={workspaceState.openAlerts}
         isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        onClose={closeNavigation}
+        onNavigate={() => setSidebarOpen(false)}
       />
       <button
         type="button"
@@ -100,8 +158,8 @@ function ApplicationShell() {
         <TopBar
           apiStatus={workspaceState.apiStatus}
           activeDataset={workspaceState.activeDataset}
-          isMenuOpen={sidebarOpen}
-          onMenuToggle={() => setSidebarOpen((current) => !current)}
+          isMenuOpen={navigationVisible}
+          onMenuToggle={toggleNavigation}
         />
         <main className="workspace-content" id="workspace-main" tabIndex={-1}>
           <AppRoutes />
@@ -114,19 +172,9 @@ function ApplicationShell() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/*"
-            element={(
-              <ProtectedRoute>
-                <ApplicationShell />
-              </ProtectedRoute>
-            )}
-          />
-        </Routes>
-      </AuthProvider>
+      <Routes>
+        <Route path="/*" element={<ApplicationShell />} />
+      </Routes>
     </BrowserRouter>
   )
 }

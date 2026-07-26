@@ -31,7 +31,7 @@
   gap: 0.75rem;
 }
 
-.login-brand > div {
+.login-brand>div {
   display: grid;
   gap: 0.13rem;
 }
@@ -139,7 +139,7 @@
   gap: 0.42rem;
 }
 
-.login-field > span:first-child {
+.login-field>span:first-child {
   color: #9ca6b8;
   font-size: 0.62rem;
   font-weight: 700;
@@ -203,7 +203,7 @@
   background: rgba(127, 29, 29, 0.1);
 }
 
-.login-error > span {
+.login-error>span {
   width: 22px;
   height: 22px;
   display: grid;
@@ -260,7 +260,7 @@
   background: var(--color-canvas);
 }
 
-.auth-state > div {
+.auth-state>div {
   display: grid;
   gap: 0.18rem;
 }
@@ -270,7 +270,7 @@
   font-size: 0.76rem;
 }
 
-.auth-state div > span {
+.auth-state div>span {
   font-size: 0.64rem;
 }
 

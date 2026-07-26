@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
+import { useTheme } from '../hooks/useTheme'
 import { resolveWorkspaceRoute } from '../router/manifest'
 import type { ApiStatus } from '../types'
 
@@ -16,6 +16,23 @@ interface TopBarProps {
   onMenuToggle: () => void
 }
 
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  )
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  )
+}
+
 export default function TopBar({
   apiStatus,
   activeDataset,
@@ -24,15 +41,7 @@ export default function TopBar({
 }: TopBarProps) {
   const location = useLocation()
   const page = resolveWorkspaceRoute(location.pathname)
-  const { session, signOut } = useAuth()
-  const user = session?.user
-  const initials = user?.display_name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() || 'AML'
-  const role = user?.roles[0]?.replaceAll('_', ' ') ?? 'AML reviewer'
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <header className="workspace-topbar">
@@ -40,7 +49,7 @@ export default function TopBar({
         <button
           type="button"
           className="topbar-menu"
-          aria-label="Open workspace navigation"
+          aria-label={isMenuOpen ? 'Close workspace navigation' : 'Open workspace navigation'}
           aria-controls="primary-workspace-navigation"
           aria-expanded={isMenuOpen}
           onClick={onMenuToggle}
@@ -70,17 +79,20 @@ export default function TopBar({
         </span>
         <button
           type="button"
-          className="topbar-reviewer"
-          title={`Sign out ${user?.display_name ?? 'reviewer'}`}
-          aria-label={`Sign out ${user?.display_name ?? 'reviewer'}`}
-          onClick={() => void signOut()}
+          className={`topbar-theme-toggle topbar-theme-toggle--${theme}`}
+          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          onClick={toggleTheme}
+          title={theme === 'light' ? 'Dark mode' : 'Light mode'}
         >
-          <span aria-hidden="true">{initials}</span>
-          <span>
-            <strong>{user?.display_name ?? 'AML reviewer'}</strong>
-            <small>{role}</small>
-          </span>
+          {theme === 'light' ? <MoonIcon /> : <SunIcon />}
         </button>
+        <div className="topbar-reviewer">
+          <span aria-hidden="true">A</span>
+          <span>
+            <strong>AML Analyst</strong>
+            <small>investigator</small>
+          </span>
+        </div>
       </div>
     </header>
   )
