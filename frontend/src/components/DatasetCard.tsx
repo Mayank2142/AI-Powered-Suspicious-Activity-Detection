@@ -31,7 +31,10 @@ export default function DatasetCard({
     || dataset.dataset_id === 'saml-d-knowledge-v1'
 
   return (
-    <article className={`dataset-card${dataset.is_active ? ' dataset-card--active' : ''}`}>
+    <article
+      className={`dataset-card${dataset.is_active ? ' dataset-card--active' : ''}`}
+      aria-busy={busy}
+    >
       <header>
         <div>
           <span className="section-kicker">{dataset.dataset_type} workspace</span>
@@ -52,17 +55,19 @@ export default function DatasetCard({
         <div><dt>Source</dt><dd>{dataset.source_file || 'Internal source'}</dd></div>
         <div><dt>Size</dt><dd>{formatBytes(dataset.file_size_bytes)}</dd></div>
         {dataset.date_min ? <div><dt>Coverage</dt><dd>{dataset.date_min} → {dataset.date_max}</dd></div> : null}
+        <div><dt>Ingested</dt><dd>{new Date(dataset.ingested_at).toLocaleDateString()}</dd></div>
+        <div><dt>Schema version</dt><dd>{dataset.schema_version}</dd></div>
         <div><dt>Fingerprint</dt><dd>{dataset.md5_fingerprint?.slice(0, 20) || 'Managed'}</dd></div>
       </dl>
       <div className="dataset-actions">
         {!dataset.is_active && dataset.dataset_type !== 'kyc'
-          ? <button disabled={busy} onClick={() => onActivate(dataset)}>Activate</button>
+          ? <button disabled={busy} onClick={() => onActivate(dataset)}>{busy ? 'Activating…' : 'Activate'}</button>
           : null}
         {dataset.dataset_type === 'primary'
-          ? <button className="button-secondary" onClick={() => onAnalyze(dataset)}>Analyze</button>
+          ? <button className="button-secondary" disabled={busy} onClick={() => onAnalyze(dataset)}>Analyze</button>
           : null}
         {!protectedDataset && !dataset.is_active
-          ? <button className="button-danger" disabled={busy} onClick={() => onDelete(dataset)}>Delete</button>
+          ? <button className="button-danger" disabled={busy} onClick={() => onDelete(dataset)}>{busy ? 'Working…' : 'Delete'}</button>
           : null}
       </div>
     </article>

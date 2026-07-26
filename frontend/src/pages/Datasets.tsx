@@ -13,6 +13,8 @@ export default function Datasets() {
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | DatasetInfo['dataset_type']>('all')
 
   async function refresh() {
     setLoading(true)
@@ -33,8 +35,16 @@ export default function Datasets() {
     [datasets],
   )
   const available = useMemo(
-    () => datasets.filter((dataset) => !dataset.is_active),
-    [datasets],
+    () => datasets.filter((dataset) => {
+      const query = search.trim().toLocaleLowerCase()
+      const matchesSearch = !query
+        || dataset.display_name.toLocaleLowerCase().includes(query)
+        || dataset.dataset_id.toLocaleLowerCase().includes(query)
+        || dataset.schema_detected.toLocaleLowerCase().includes(query)
+      const matchesType = typeFilter === 'all' || dataset.dataset_type === typeFilter
+      return !dataset.is_active && matchesSearch && matchesType
+    }),
+    [datasets, search, typeFilter],
   )
 
   async function activate(dataset: DatasetInfo): Promise<boolean> {
@@ -99,13 +109,52 @@ export default function Datasets() {
         <div><span>Active workspaces</span><strong>{active.length}</strong></div>
         <div><span>Total governed rows</span><strong>{datasets.reduce((sum, item) => sum + item.row_count, 0).toLocaleString()}</strong></div>
       </section>
+      <section className="workspace-toolbar" aria-label="Dataset filters">
+        <label>
+          <span>Search datasets</span>
+          <input
+            type="search"
+            value={search}
+            placeholder="Name, ID, or schema"
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </label>
+        <label>
+          <span>Dataset type</span>
+          <select
+            value={typeFilter}
+            onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
+          >
+            <option value="all">All types</option>
+            <option value="primary">Primary transactions</option>
+            <option value="knowledge">AML knowledge</option>
+            <option value="kyc">KYC enrichment</option>
+          </select>
+        </label>
+        <button className="button-secondary" disabled={loading} onClick={() => void refresh()}>
+          {loading ? 'Refreshing…' : 'Refresh registry'}
+        </button>
+      </section>
       {notice ? <div className="workspace-notice" role="status">{notice}</div> : null}
       {error ? <div className="workspace-error" role="alert">{error}</div> : null}
       {loading ? <div className="workspace-loading">Loading governed workspaces…</div> : null}
       {!loading ? (
         <>
-          <section className="dataset-section"><div className="dataset-section__heading"><span className="section-kicker">Active analytical context</span><h2>Active datasets</h2></div><div className="dataset-grid">{active.map(card)}</div></section>
-          <section className="dataset-section"><div className="dataset-section__heading"><span className="section-kicker">Isolated and available</span><h2>Other datasets</h2></div>{available.length ? <div className="dataset-grid">{available.map(card)}</div> : <p className="panel-empty">No inactive datasets. Upload another institutional source to create an isolated workspace.</p>}</section>
+          <section className="dataset-section">
+            <div className="dataset-section__heading"><span className="section-kicker">Active analytical context</span><h2>Active datasets</h2></div>
+            {active.length
+              ? <div className="dataset-grid">{active.map(card)}</div>
+              : <p className="panel-empty">No active primary dataset. Activate one before running an investigation.</p>}
+          </section>
+          <section className="dataset-section">
+            <div className="dataset-section__heading">
+              <span className="section-kicker">Isolated and available</span>
+              <h2>Other datasets <small>{available.length} shown</small></h2>
+            </div>
+            {available.length
+              ? <div className="dataset-grid">{available.map(card)}</div>
+              : <p className="panel-empty">No datasets match these filters. Clear the search or upload another institutional source.</p>}
+          </section>
         </>
       ) : null}
       <section className="data-governance-note"><strong>Isolation and human control</strong><p>Each upload is validated, fingerprinted, and stored in its own DuckDB schema. Activating a primary workspace changes the evidence source for future analyses; existing investigations remain immutable.</p></section>

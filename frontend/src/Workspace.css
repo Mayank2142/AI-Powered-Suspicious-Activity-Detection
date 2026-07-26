@@ -140,6 +140,20 @@
 .compact-plan { display: flex; flex-wrap: wrap; gap: 0.42rem; margin: 0; padding: 0; list-style: none; }
 .compact-plan li { padding: 0.32rem 0.48rem; color: #9aa5b8; border: 1px solid rgba(148, 163, 184, 0.1); border-radius: 6px; background: rgba(255, 255, 255, 0.018); font-size: 0.61rem; text-transform: capitalize; }
 .investigation-retention-note { margin: 1.2rem 0 0; padding-top: 0.8rem; color: #657087; border-top: 1px solid rgba(148, 163, 184, 0.08); font-size: 0.65rem; line-height: 1.6; }
+.register-count { margin: 0 0 0.25rem; color: var(--text-muted); font-size: 0.6rem; }
+.investigation-context { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin: 0 0 1rem; }
+.investigation-context div { padding: 0.6rem; border-radius: 7px; background: rgba(148, 163, 184, 0.035); }
+.investigation-context dt { color: #657087; font-size: 0.54rem; text-transform: uppercase; }
+.investigation-context dd { margin: 0.22rem 0 0; color: #aab3c3; font-size: 0.65rem; text-transform: capitalize; }
+.skipped-plan { display: grid; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
+.skipped-plan li { display: grid; gap: 0.15rem; padding: 0.55rem 0.65rem; border-left: 2px solid rgba(148, 163, 184, 0.2); background: rgba(148, 163, 184, 0.025); }
+.skipped-plan strong { color: #929daf; font-size: 0.61rem; text-transform: capitalize; }
+.skipped-plan span { color: #657087; font-size: 0.58rem; line-height: 1.5; }
+.investigation-finding { padding: 0.75rem; border: 1px solid rgba(251, 113, 133, 0.12); border-radius: 9px; background: rgba(251, 113, 133, 0.035); }
+.investigation-finding > div { display: flex; justify-content: space-between; gap: 1rem; }
+.investigation-finding strong { color: #fecdd3; font-size: 0.72rem; }
+.investigation-finding span { color: #fb7185; font-size: 0.58rem; text-transform: uppercase; }
+.investigation-finding p { margin: 0.5rem 0 0; color: #8f9aad; font-size: 0.62rem; line-height: 1.55; }
 
 .model-loading { margin-top: 1.5rem; padding: 1rem; color: var(--text-muted); border: 1px solid rgba(148, 163, 184, 0.1); border-radius: 10px; }
 .model-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem; margin: 1.5rem 0 1rem; }
@@ -403,6 +417,11 @@
 .dataset-actions .button-danger { margin-left: auto; color: #fca5a5; border-color: rgba(239, 68, 68, 0.18); background: rgba(239, 68, 68, 0.06); }
 .dataset-section { margin-top: 1.35rem; }
 .dataset-section__heading h2 { margin: 0.3rem 0 0; color: var(--text-secondary); font-size: 0.88rem; }
+.dataset-section__heading h2 small { margin-left: 0.35rem; color: #657087; font-size: 0.58rem; font-weight: 500; }
+.workspace-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(160px, 0.45fr) auto; align-items: end; gap: 0.65rem; margin-top: 0.85rem; padding: 0.7rem; border: 1px solid rgba(148, 163, 184, 0.09); border-radius: 9px; background: rgba(17, 24, 39, 0.38); }
+.workspace-toolbar label { display: grid; gap: 0.3rem; color: #657087; font-size: 0.55rem; font-weight: 700; text-transform: uppercase; }
+.workspace-toolbar input, .workspace-toolbar select { min-height: 36px; padding: 0.45rem 0.6rem; color: #b7c0cf; border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 7px; background: #090f1a; font: inherit; }
+.workspace-toolbar button { min-height: 36px; padding: 0.45rem 0.7rem; color: #aab3c3; border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 7px; background: rgba(255, 255, 255, 0.025); font: inherit; font-size: 0.61rem; font-weight: 700; cursor: pointer; }
 .dataset-control-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65rem; margin-top: 1rem; }
 .dataset-control-strip div { display: grid; gap: 0.2rem; padding: 0.75rem; border: 1px solid rgba(99, 102, 241, 0.1); border-radius: 9px; background: rgba(99, 102, 241, 0.035); }
 .dataset-control-strip span { color: #657087; font-size: 0.55rem; text-transform: uppercase; }
@@ -414,6 +433,7 @@
 .upload-modal { width: min(760px, 100%); max-height: calc(100vh - 2rem); overflow: auto; padding: 1.15rem; border: 1px solid rgba(129, 140, 248, 0.23); border-radius: 14px; background: #0d1320; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45); }
 .upload-modal > header { display: flex; align-items: start; justify-content: space-between; }
 .upload-modal h2 { margin: 0.28rem 0 0; color: var(--text-primary); font-size: 1.05rem; }
+.upload-modal header p { max-width: 540px; margin: 0.35rem 0 0; color: #657087; font-size: 0.61rem; line-height: 1.5; }
 .upload-modal .close-button { width: 34px; padding: 0; color: #94a3b8; border-color: transparent; background: transparent; font-size: 1rem; }
 .upload-dropzone { min-height: 135px; display: grid; place-items: center; align-content: center; gap: 0.35rem; margin-top: 1rem; color: #8f9aad; border: 1px dashed rgba(129, 140, 248, 0.32); border-radius: 11px; background: rgba(99, 102, 241, 0.045); text-align: center; cursor: pointer; }
 .upload-dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
@@ -441,5 +461,5 @@
 }
 
 @media (max-width: 760px) {
-  .dataset-control-strip, .upload-fields { grid-template-columns: 1fr; }
+  .dataset-control-strip, .upload-fields, .workspace-toolbar, .investigation-context { grid-template-columns: 1fr; }
 }

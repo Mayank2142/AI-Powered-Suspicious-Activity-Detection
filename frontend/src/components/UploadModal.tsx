@@ -1,4 +1,4 @@
-import { type DragEvent, type FormEvent, useState } from 'react'
+import { type DragEvent, type FormEvent, useEffect, useState } from 'react'
 import { inspectDataset, uploadDataset } from '../api'
 import type { DatasetInfo, DatasetInspection, DatasetUploadResult } from '../types'
 
@@ -15,8 +15,27 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
   const [stage, setStage] = useState<'idle' | 'inspecting' | 'ingesting'>('idle')
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && stage !== 'ingesting') onClose()
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [onClose, stage])
+
   async function chooseFile(next: File | null) {
     if (!next) return
+    const supported = /\.(csv|xlsx)$/i.test(next.name)
+    if (!supported || next.size > 25 * 1024 * 1024) {
+      setFile(null)
+      setInspection(null)
+      setError(
+        !supported
+          ? 'Choose a CSV or Excel (.xlsx) file.'
+          : 'Files larger than 25 MB require the controlled batch-ingestion process.',
+      )
+      return
+    }
     setFile(next)
     setName(next.name.replace(/\.[^.]+$/, ''))
     setInspection(null)
@@ -51,23 +70,23 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
   }
 
   return (
-    <div className="modal-layer" role="presentation" onMouseDown={onClose}>
-      <section className="upload-modal" role="dialog" aria-modal="true" aria-labelledby="upload-title" onMouseDown={(event) => event.stopPropagation()}>
+    <div className="modal-layer" role="presentation" onMouseDown={() => stage !== 'ingesting' && onClose()}>
+      <section className="upload-modal" role="dialog" aria-modal="true" aria-labelledby="upload-title" aria-describedby="upload-description" onMouseDown={(event) => event.stopPropagation()}>
         <header>
-          <div><span className="section-kicker">Governed import</span><h2 id="upload-title">Upload dataset</h2></div>
-          <button className="close-button" onClick={onClose} aria-label="Close upload">×</button>
+          <div><span className="section-kicker">Governed import</span><h2 id="upload-title">Upload dataset</h2><p id="upload-description">Inspect schema and mappings before creating an isolated evidence workspace.</p></div>
+          <button type="button" className="close-button" disabled={stage === 'ingesting'} onClick={onClose} aria-label="Close upload">×</button>
         </header>
         <form onSubmit={submit}>
           <label className="upload-dropzone" onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
             <input aria-label="Dataset file" type="file" accept=".csv,.xlsx" onChange={(event) => void chooseFile(event.target.files?.[0] ?? null)} />
             <strong>{file ? file.name : 'Drop CSV or Excel here'}</strong>
-            <span>{file ? `${(file.size / 1024).toFixed(1)} KB selected` : 'or choose a file to inspect its schema'}</span>
+            <span>{file ? `${(file.size / 1024).toFixed(1)} KB selected` : 'CSV or XLSX, up to 25 MB · inspected before ingest'}</span>
           </label>
           <div className="upload-fields">
             <label><span>Dataset name</span><input value={name} maxLength={120} onChange={(event) => setName(event.target.value)} /></label>
             <label><span>Dataset type</span><select value={type} onChange={(event) => setType(event.target.value as DatasetInfo['dataset_type'])}><option value="primary">Primary transactions</option><option value="knowledge">AML knowledge</option><option value="kyc">KYC enrichment</option></select></label>
           </div>
-          {stage === 'inspecting' ? <div className="upload-progress">Inspecting schema and required fields…</div> : null}
+          {stage === 'inspecting' ? <div className="upload-progress" role="status">Inspecting schema and required fields…</div> : null}
           {inspection ? (
             <section className="schema-preview">
               <header><div><span>Detected schema</span><strong>{inspection.schema_detected}</strong></div><span>{inspection.columns.length} columns</span></header>
@@ -78,7 +97,7 @@ export default function UploadModal({ onClose, onUploaded }: Props) {
           ) : null}
           {error ? <div className="workspace-error" role="alert">{error}</div> : null}
           <footer>
-            <button type="button" className="button-secondary" onClick={onClose}>Cancel</button>
+            <button type="button" className="button-secondary" disabled={stage === 'ingesting'} onClick={onClose}>Cancel</button>
             <button type="submit" disabled={!file || !inspection || stage !== 'idle'}>{stage === 'ingesting' ? 'Validating and ingesting…' : 'Start governed ingest'}</button>
           </footer>
         </form>
