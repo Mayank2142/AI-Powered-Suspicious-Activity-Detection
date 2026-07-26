@@ -17,6 +17,7 @@ from api.repositories.customer_repository import (
 )
 from config import RISK_HIGH_THRESHOLD, RISK_LOW_THRESHOLD
 from tools.data_loader import get_db_connection
+from tools.workflow_store import list_entity_alerts
 
 
 def _iso(value: Any) -> str:
@@ -122,7 +123,7 @@ def get_customer(
                 )
                 for row in profile.top_counterparties
             ],
-            alerts=[],
+            alerts=list_entity_alerts(account_id, conn=database),
         )
     finally:
         if own_connection:
