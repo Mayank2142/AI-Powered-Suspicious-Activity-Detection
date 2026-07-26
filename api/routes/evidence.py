@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import re
 from datetime import date
-from typing import Any, Literal, Protocol
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -12,6 +12,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from agent.models import CustomerDetail, CustomerSummary, TransactionRecord
 from api.security.dependencies import require_authenticated_session
 from api.services.auth_service import AuthSession
+from api.services.evidence_service import (
+    EvidenceNotFound,
+    EvidenceService,
+    EvidenceUnavailable,
+    get_evidence_service,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -44,49 +50,6 @@ class PaymentFormatList(BaseModel):
     items: list[str]
 
 
-class EvidenceRepository(Protocol):
-    def list_customers(
-        self,
-        *,
-        search: str | None,
-        risk_label: str | None,
-        limit: int,
-        offset: int,
-    ) -> tuple[list[Any], int]: ...
-
-    def get_customer(self, account_id: str) -> Any | None: ...
-
-    def list_transactions(self, **filters: Any) -> tuple[list[Any], int]: ...
-
-    def payment_formats(self) -> list[str]: ...
-
-
-class RuntimeEvidenceRepository:
-    def list_customers(self, **filters: Any) -> tuple[list[Any], int]:
-        from tools.customer_browser import list_customers
-
-        return list_customers(**filters)
-
-    def get_customer(self, account_id: str) -> Any | None:
-        from tools.customer_browser import get_customer
-
-        return get_customer(account_id)
-
-    def list_transactions(self, **filters: Any) -> tuple[list[Any], int]:
-        from tools.transaction_browser import list_transactions
-
-        return list_transactions(**filters)
-
-    def payment_formats(self) -> list[str]:
-        from tools.transaction_browser import payment_formats
-
-        return payment_formats()
-
-
-def get_evidence_repository() -> EvidenceRepository:
-    return RuntimeEvidenceRepository()
-
-
 def _no_store(response: Response) -> None:
     response.headers["Cache-Control"] = "private, no-store"
 
@@ -112,26 +75,23 @@ def list_customer_evidence(
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     _: AuthSession = Depends(require_authenticated_session),
-    repository: EvidenceRepository = Depends(get_evidence_repository),
+    service: EvidenceService = Depends(get_evidence_service),
 ) -> CustomerPage:
     _no_store(response)
     try:
-        items, total = repository.list_customers(
+        items, total = service.list_customers(
             search=search.strip() if search else None,
             risk_label=risk_label,
             limit=limit,
             offset=offset,
         )
         return CustomerPage(
-            items=[
-                CustomerSummary.model_validate(item)
-                for item in items
-            ],
+            items=items,
             total=total,
             limit=limit,
             offset=offset,
         )
-    except Exception as exc:
+    except EvidenceUnavailable as exc:
         raise _service_unavailable(
             "Customer evidence lookup failed",
             exc,
@@ -151,21 +111,18 @@ def customer_evidence_detail(
         pattern=_ACCOUNT_ID.pattern,
     ),
     _: AuthSession = Depends(require_authenticated_session),
-    repository: EvidenceRepository = Depends(get_evidence_repository),
+    service: EvidenceService = Depends(get_evidence_service),
 ) -> CustomerDetail:
     _no_store(response)
     try:
-        record = repository.get_customer(account_id)
-        if record is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Customer not found.",
-                headers={"Cache-Control": "private, no-store"},
-            )
-        return CustomerDetail.model_validate(record)
-    except HTTPException:
-        raise
-    except Exception as exc:
+        return service.get_customer(account_id)
+    except EvidenceNotFound as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Customer not found.",
+            headers={"Cache-Control": "private, no-store"},
+        ) from exc
+    except EvidenceUnavailable as exc:
         raise _service_unavailable(
             "Customer evidence detail failed",
             exc,
@@ -180,20 +137,12 @@ def customer_evidence_detail(
 def transaction_payment_formats(
     response: Response,
     _: AuthSession = Depends(require_authenticated_session),
-    repository: EvidenceRepository = Depends(get_evidence_repository),
+    service: EvidenceService = Depends(get_evidence_service),
 ) -> PaymentFormatList:
     _no_store(response)
     try:
-        items = sorted(
-            {
-                item.strip()
-                for item in repository.payment_formats()
-                if item.strip()
-            },
-            key=str.casefold,
-        )
-        return PaymentFormatList(items=items)
-    except Exception as exc:
+        return PaymentFormatList(items=service.payment_formats())
+    except EvidenceUnavailable as exc:
         raise _service_unavailable(
             "Payment-format lookup failed",
             exc,
@@ -218,7 +167,7 @@ def list_transaction_evidence(
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     _: AuthSession = Depends(require_authenticated_session),
-    repository: EvidenceRepository = Depends(get_evidence_repository),
+    service: EvidenceService = Depends(get_evidence_service),
 ) -> TransactionPage:
     _no_store(response)
     if direction != "both" and not account_id:
@@ -251,7 +200,7 @@ def list_transaction_evidence(
         )
 
     try:
-        items, total = repository.list_transactions(
+        items, total = service.list_transactions(
             account_id=account_id,
             direction=direction,
             payment_format=payment_format.strip() if payment_format else None,
@@ -264,15 +213,12 @@ def list_transaction_evidence(
             offset=offset,
         )
         return TransactionPage(
-            items=[
-                TransactionRecord.model_validate(item)
-                for item in items
-            ],
+            items=items,
             total=total,
             limit=limit,
             offset=offset,
         )
-    except Exception as exc:
+    except EvidenceUnavailable as exc:
         raise _service_unavailable(
             "Transaction evidence lookup failed",
             exc,

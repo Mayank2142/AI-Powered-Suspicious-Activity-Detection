@@ -12,6 +12,7 @@ from agent.models import (
 )
 from api.routes import evidence
 from api.services.auth_service import AuthSession, AuthUser
+from api.services.evidence_service import EvidenceService
 
 
 SESSION = AuthSession(
@@ -82,8 +83,8 @@ class FakeEvidenceRepository:
 def _client(repository):
     app = FastAPI()
     app.include_router(evidence.router)
-    app.dependency_overrides[evidence.get_evidence_repository] = (
-        lambda: repository
+    app.dependency_overrides[evidence.get_evidence_service] = (
+        lambda: EvidenceService(repository)
     )
     app.dependency_overrides[evidence.require_authenticated_session] = (
         lambda: SESSION
@@ -175,7 +176,7 @@ def test_payment_formats_are_deduplicated_and_sorted():
         response = client.get("/transactions/payment-formats")
 
     assert response.status_code == 200
-    assert response.json() == {"items": ["ACH", "Wire", "wire"]}
+    assert response.json() == {"items": ["ACH", "Wire"]}
 
 
 def test_repository_errors_do_not_expose_database_details():
