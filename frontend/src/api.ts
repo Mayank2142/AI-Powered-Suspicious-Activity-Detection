@@ -304,27 +304,27 @@ async function downloadFile(path: string, filename: string) {
 
 export function exportEntities(
   investigationId: string,
-  format: 'csv' | 'json' | 'xlsx',
+  format: 'csv' | 'json',
 ) {
   return downloadFile(
-    `/export/entities?format=${format}&investigation_id=${encodeURIComponent(investigationId)}`,
-    `sentinel_entities_${today()}.${format}`,
+    `/exports/investigations/${encodeURIComponent(investigationId)}/entities?format=${format}`,
+    `sentinel_entities_${investigationId}_${today()}.${format}`,
   )
 }
 
 export function exportInvestigation(
   investigationId: string,
-  format: 'json' | 'md' | 'pdf',
+  format: 'json' | 'md',
 ) {
   return downloadFile(
-    `/export/investigation/${encodeURIComponent(investigationId)}?format=${format}`,
+    `/exports/investigations/${encodeURIComponent(investigationId)}?format=${format}`,
     `investigation_${investigationId}.${format}`,
   )
 }
 
 export function exportTrace(investigationId: string, format: 'csv' | 'json') {
   return downloadFile(
-    `/export/trace/${encodeURIComponent(investigationId)}?format=${format}`,
+    `/exports/investigations/${encodeURIComponent(investigationId)}/trace?format=${format}`,
     `trace_${investigationId}.${format}`,
   )
 }

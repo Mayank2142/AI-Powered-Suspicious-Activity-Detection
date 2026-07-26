@@ -1359,6 +1359,7 @@ footer {
 }
 .export-panel > div:first-child { display: grid; gap: 0.2rem; }
 .export-panel > div:first-child strong { color: #c7d2fe; font-size: 0.7rem; }
+.export-panel > div:first-child small { color: #657087; font-size: 0.55rem; }
 .export-actions { display: flex; flex-wrap: wrap; gap: 0.38rem; }
 .export-actions button {
   min-height: 31px;

@@ -23,16 +23,19 @@ export default function ExportPanel({ investigationId }: { investigationId?: str
 
   return (
     <section className="export-panel" aria-label="Export investigation">
-      <div><span className="section-kicker">Governed export</span><strong>Download reviewer-ready evidence</strong></div>
+      <div>
+        <span className="section-kicker">Governed export</span>
+        <strong>Download reviewer-ready evidence</strong>
+        <small>Every file is tied to investigation {investigationId}.</small>
+      </div>
       <div className="export-actions">
         <button disabled={Boolean(busy)} onClick={() => void run('csv', () => exportEntities(investigationId, 'csv'))}>Entities CSV</button>
-        <button disabled={Boolean(busy)} onClick={() => void run('xlsx', () => exportEntities(investigationId, 'xlsx'))}>Evidence Excel</button>
-        <button disabled={Boolean(busy)} onClick={() => void run('pdf', () => exportInvestigation(investigationId, 'pdf'))}>Report PDF</button>
+        <button disabled={Boolean(busy)} onClick={() => void run('json', () => exportInvestigation(investigationId, 'json'))}>Evidence JSON</button>
         <button disabled={Boolean(busy)} onClick={() => void run('md', () => exportInvestigation(investigationId, 'md'))}>Report MD</button>
         <button disabled={Boolean(busy)} onClick={() => void run('trace', () => exportTrace(investigationId, 'csv'))}>Trace CSV</button>
       </div>
-      {busy ? <span className="export-status">Preparing {busy}…</span> : null}
-      {error ? <span className="export-error">{error}</span> : null}
+      {busy ? <span className="export-status" role="status">Preparing {busy}…</span> : null}
+      {error ? <span className="export-error" role="alert">{error}</span> : null}
     </section>
   )
 }
