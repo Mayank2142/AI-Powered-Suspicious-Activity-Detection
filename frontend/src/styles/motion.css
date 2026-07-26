@@ -1,0 +1,21 @@
+@keyframes sentinel-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.workspace-page {
+  animation: sentinel-page-enter 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-page {
+    animation: none;
+  }
+}
