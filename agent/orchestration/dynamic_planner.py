@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from agent.models import IntentFilters, IntentResult, SkippedTool
 from agent.orchestration.contracts import (
@@ -39,6 +40,20 @@ _ALL_OPTIONAL_TOOLS: tuple[ToolName, ...] = (
 )
 
 
+@dataclass(frozen=True, slots=True)
+class PlanningLimits:
+    """Hard limits enforced before a plan reaches the runtime."""
+
+    max_steps: int = 8
+    max_records: int = 100_000
+
+    def __post_init__(self):
+        if self.max_steps < 2:
+            raise ValueError("max_steps must be at least 2")
+        if self.max_records < 1:
+            raise ValueError("max_records must be positive")
+
+
 def _filter_parameters(filters: IntentFilters) -> dict[str, object]:
     """Return only explicit user filters, ready for the data-loading boundary."""
 
@@ -52,6 +67,9 @@ class DynamicPlanningAgent:
     decisions only from the validated intent contract, keeping planning
     deterministic, testable, and safe to audit.
     """
+
+    def __init__(self, limits: PlanningLimits | None = None):
+        self.limits = limits or PlanningLimits()
 
     def build_plan(
         self,
@@ -69,6 +87,7 @@ class DynamicPlanningAgent:
                 parameters={
                     "filters": _filter_parameters(intent.filters),
                     "entity_ids": intent.entities,
+                    "max_records": self.limits.max_records,
                 },
             )
         ]
@@ -153,6 +172,10 @@ class DynamicPlanningAgent:
             for tool in _ALL_OPTIONAL_TOOLS
             if tool not in selected
         ]
+        if len(steps) > self.limits.max_steps:
+            raise ValueError(
+                f"execution plan exceeds the {self.limits.max_steps}-step limit"
+            )
         return AdaptiveExecutionPlan(
             query=normalized_query,
             intent=intent,
