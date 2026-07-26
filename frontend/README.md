@@ -1,32 +1,50 @@
-# React + TypeScript + Vite
+# Sentinel AML frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This directory contains the React and TypeScript analyst workspace for
+Sentinel AML. It is owned by Mayank Gupta and developed on the `mayank`
+branch.
 
-Currently, two official plugins are available:
+## Ownership boundary
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Mayank owns:
 
-## React Compiler
+- pages, components, navigation, dashboard, and UI/UX
+- frontend authentication and route guards
+- charts and reviewer visualizations
+- frontend API clients and TypeScript response contracts
+- presentation-focused agents and API route modules assigned by the workflow
+- frontend tests, build configuration, and deployment assets
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Backend services, databases, core AML agents, and backend authentication
+belong to Devesh and must be committed on the `devesh` branch.
 
-## Expanding the Oxlint configuration
+## Local development
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The application is available at `http://127.0.0.1:5173`. During development,
+Vite proxies `/api` requests to the local FastAPI service.
+
+## Quality checks
+
+Run all frontend checks before completing a phase:
+
+```bash
+npm run lint
+npm run test
+npm run build
+```
+
+## Environment
+
+Copy `.env.production.example` only when preparing a hosted build. Do not
+commit local `.env` files or credentials.
+
+## Git workflow
+
+Frontend changes are committed only on `mayank`. Commits remain small and
+phase-specific. The branch is pushed only after the complete phase passes its
+quality checks; it is never merged into `main` without explicit approval.
