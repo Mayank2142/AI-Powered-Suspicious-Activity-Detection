@@ -31,7 +31,13 @@ function TraceItem({ step, index }: { step: ExecutionStep; index: number }) {
   const style = { '--trace-delay': `${index * 65}ms` } as CSSProperties
 
   return (
-    <li className={`trace-item trace-item--${step.status}`} style={style}>
+    <li
+      className={`trace-item trace-item--${step.status}`}
+      style={style}
+      aria-label={`${TOOL_LABELS[step.tool] ?? formatLabel(step.tool)} ${
+        isRun ? 'executed' : 'skipped'
+      }`}
+    >
       <span className="trace-marker" aria-hidden="true">
         {isRun ? '✓' : '×'}
       </span>
@@ -47,21 +53,39 @@ function TraceItem({ step, index }: { step: ExecutionStep; index: number }) {
 
 export function ExecutionTrace({ steps }: { steps: ExecutionStep[] }) {
   const ran = steps.filter((step) => step.status === 'run').length
+  const skipped = steps.length - ran
+  const durationMs = steps.reduce(
+    (total, step) => total + step.duration_ms,
+    0,
+  )
 
   return (
-    <section className="panel trace-panel">
+    <section className="panel trace-panel" aria-label="Agent execution trace">
       <div className="panel-heading">
         <div>
           <span className="section-kicker">02 · Execution trace</span>
           <h2>Decision path</h2>
         </div>
-        <span className="trace-count">{ran}/{steps.length} ran</span>
+        <span className="trace-count">{ran}/{steps.length} selected</span>
       </div>
-      <ol className="trace-list">
-        {steps.map((step, index) => (
-          <TraceItem key={`${step.tool}-${step.status}`} step={step} index={index} />
-        ))}
-      </ol>
+      <p className="muted-copy" role="status">
+        {ran} tools ran · {skipped} skipped · {formatDuration(durationMs)} total
+      </p>
+      {steps.length ? (
+        <ol className="trace-list">
+          {steps.map((step, index) => (
+            <TraceItem
+              key={`${step.tool}-${step.status}-${index}`}
+              step={step}
+              index={index}
+            />
+          ))}
+        </ol>
+      ) : (
+        <p className="panel-empty">
+          No tools were selected for this investigation.
+        </p>
+      )}
     </section>
   )
 }

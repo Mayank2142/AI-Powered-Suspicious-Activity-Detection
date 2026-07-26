@@ -11,6 +11,7 @@ import { checkHealth, exportSar, getDatasets, runQuery } from '../api'
 import { ExecutionTrace } from '../components/ExecutionTrace'
 import ExportPanel from '../components/ExportPanel'
 import RiskContributionBar from '../components/RiskContributionBar'
+import RiskSummary from '../components/RiskSummary'
 import TransactionEvidenceList from '../components/TransactionEvidenceList'
 import { saveInvestigation } from '../store/investigations'
 import type {
@@ -190,42 +191,6 @@ function IntentSummary({ response }: { response: AgentResponse }) {
         )}
       </div>
       <p className="plan-reasoning">{response.plan.reasoning}</p>
-    </section>
-  )
-}
-
-function RiskSummary({ response }: { response: AgentResponse }) {
-  const stats = response.summary_stats
-  const flaggedRate = stats.total_analyzed
-    ? ((stats.flagged / stats.total_analyzed) * 100).toFixed(1)
-    : '0.0'
-
-  return (
-    <section className="risk-summary" aria-label="Risk summary">
-      <article>
-        <span className="metric-icon metric-icon--indigo" aria-hidden="true">Σ</span>
-        <div>
-          <span>Transactions analysed</span>
-          <strong>{stats.total_analyzed.toLocaleString()}</strong>
-          <small>Filtered query slice</small>
-        </div>
-      </article>
-      <article>
-        <span className="metric-icon metric-icon--amber" aria-hidden="true">!</span>
-        <div>
-          <span>Entities flagged</span>
-          <strong>{stats.flagged.toLocaleString()}</strong>
-          <small>{flaggedRate}% of analysed rows</small>
-        </div>
-      </article>
-      <article>
-        <span className="metric-icon metric-icon--red" aria-hidden="true">↑</span>
-        <div>
-          <span>High risk</span>
-          <strong>{stats.high_risk.toLocaleString()}</strong>
-          <small>Immediate attention</small>
-        </div>
-      </article>
     </section>
   )
 }
@@ -567,7 +532,7 @@ function ResultsPanel({
         <IntentSummary response={response} />
         <ExecutionTrace steps={response.execution_trace} />
       </div>
-      <RiskSummary response={response} />
+      <RiskSummary stats={response.summary_stats} />
       {response.aggregation ? (
         <AggregationPanel aggregation={response.aggregation} />
       ) : null}
