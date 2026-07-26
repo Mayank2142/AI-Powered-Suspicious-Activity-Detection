@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   activateDataset,
+  exportEntities,
   getCustomers,
   getPolicy,
   getTransactions,
@@ -224,5 +225,27 @@ describe('runQuery', () => {
     expect(fetchMock.mock.calls[0][0]).toBe(
       '/api/transactions?account_id=A%2F1&direction=outbound&min_amount=8000&laundering_only=true',
     )
+  })
+
+  it('builds an investigation-attributed governed export request', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('entity_id,risk_score', {
+        status: 200,
+        headers: { 'Content-Type': 'text/csv' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test')
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    await exportEntities('INV/A 1', 'csv')
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/api/exports/investigations/INV%2FA%201/entities?format=csv',
+    )
+    expect(createObjectURL).toHaveBeenCalledOnce()
+    expect(click).toHaveBeenCalledOnce()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:test')
   })
 })
