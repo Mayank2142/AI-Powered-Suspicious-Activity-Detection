@@ -4,6 +4,30 @@ export type ApiStatus = 'checking' | 'online' | 'offline'
 export type RiskLabel = 'low' | 'medium' | 'high'
 export type EscalationAction = 'monitor' | 'flag_for_review' | 'report'
 
+export interface ApiErrorPayload {
+  detail?: string
+  code?: string
+  request_id?: string
+}
+
+export type WorkspaceRouteId =
+  | 'command'
+  | 'investigations'
+  | 'queue'
+  | 'customers'
+  | 'transactions'
+  | 'datasets'
+  | 'model'
+  | 'audit'
+  | 'policy'
+
+export interface WorkspaceRouteMetadata {
+  id: WorkspaceRouteId
+  path: string
+  title: string
+  context: string
+}
+
 export interface IntentFilters {
   date_range: [string, string] | null
   entity_id: string | null

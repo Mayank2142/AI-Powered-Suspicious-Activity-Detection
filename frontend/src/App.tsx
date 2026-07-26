@@ -1,30 +1,16 @@
 import { useEffect, useState } from 'react'
-import {
-  BrowserRouter,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-} from 'react-router-dom'
+import { BrowserRouter, useLocation } from 'react-router-dom'
 import { checkHealth, getDatasets, getQueueSummary } from './api'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
-import AuditTrail from './pages/AuditTrail'
-import CommandCenter, { ExecutionTrace } from './pages/CommandCenter'
-import Customers from './pages/Customers'
-import Datasets from './pages/Datasets'
-import Investigations from './pages/Investigations'
-import ModelCard from './pages/ModelCard'
-import PolicySettings from './pages/PolicySettings'
-import ReviewQueue from './pages/ReviewQueue'
-import Transactions from './pages/Transactions'
+import AppRoutes from './router/AppRoutes'
 import './App.css'
 import './Workspace.css'
 import './styles/tokens.css'
 import './styles/shell.css'
 import type { ApiStatus } from './types'
 
-export { ExecutionTrace }
+export { ExecutionTrace } from './components/ExecutionTrace'
 
 interface WorkspaceState {
   apiStatus: ApiStatus
@@ -110,18 +96,7 @@ function ApplicationShell() {
           onMenuToggle={() => setSidebarOpen((current) => !current)}
         />
         <main className="workspace-content" id="workspace-main" tabIndex={-1}>
-          <Routes>
-            <Route path="/" element={<CommandCenter />} />
-            <Route path="/investigations" element={<Investigations />} />
-            <Route path="/queue" element={<ReviewQueue />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/transactions" element={<Transactions />} />
-            <Route path="/datasets" element={<Datasets />} />
-            <Route path="/model" element={<ModelCard />} />
-            <Route path="/audit" element={<AuditTrail />} />
-            <Route path="/policy" element={<PolicySettings />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <AppRoutes />
         </main>
       </div>
     </div>

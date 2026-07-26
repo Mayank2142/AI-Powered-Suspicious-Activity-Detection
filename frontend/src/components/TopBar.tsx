@@ -1,44 +1,6 @@
 import { useLocation } from 'react-router-dom'
+import { resolveWorkspaceRoute } from '../router/manifest'
 import type { ApiStatus } from '../types'
-
-const PAGE_DETAILS: Record<string, { title: string; context: string }> = {
-  '/': {
-    title: 'Command center',
-    context: 'Query-aware investigation',
-  },
-  '/investigations': {
-    title: 'Investigations',
-    context: 'Retained decision evidence',
-  },
-  '/queue': {
-    title: 'Review queue',
-    context: 'Human escalation workflow',
-  },
-  '/customers': {
-    title: 'Customers',
-    context: 'Entity risk intelligence',
-  },
-  '/transactions': {
-    title: 'Transactions',
-    context: 'Transaction evidence',
-  },
-  '/datasets': {
-    title: 'Datasets',
-    context: 'Governed data workspace',
-  },
-  '/model': {
-    title: 'Model intelligence',
-    context: 'Detection controls',
-  },
-  '/audit': {
-    title: 'Audit trail',
-    context: 'Immutable decision trace',
-  },
-  '/policy': {
-    title: 'Policy settings',
-    context: 'Risk governance',
-  },
-}
 
 const STATUS_LABELS: Record<ApiStatus, string> = {
   checking: 'Checking API',
@@ -60,10 +22,7 @@ export default function TopBar({
   onMenuToggle,
 }: TopBarProps) {
   const location = useLocation()
-  const page = PAGE_DETAILS[location.pathname] ?? {
-    title: 'Workspace',
-    context: 'Sentinel AML',
-  }
+  const page = resolveWorkspaceRoute(location.pathname)
 
   return (
     <header className="workspace-topbar">
@@ -81,8 +40,8 @@ export default function TopBar({
           <span aria-hidden="true" />
         </button>
         <div>
-          <span>{page.context}</span>
-          <strong>{page.title}</strong>
+          <span>{page?.context ?? 'Sentinel AML'}</span>
+          <strong>{page?.title ?? 'Page not found'}</strong>
         </div>
       </div>
 

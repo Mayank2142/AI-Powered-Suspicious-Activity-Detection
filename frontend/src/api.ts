@@ -2,6 +2,7 @@ import type {
   AgentResponse,
   AlertDisposition,
   AlertQueueItem,
+  ApiErrorPayload,
   AuditResponse,
   CustomerDetail,
   CustomerFilters,
@@ -25,53 +26,124 @@ import type {
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 const RETRYABLE_STATUS = new Set([429, 502, 503, 504])
-class HttpFailure extends Error {
+const DEFAULT_TIMEOUT_MS = 30_000
+
+export class ApiClientError extends Error {
+  readonly status: number
+  readonly code: string | null
+  readonly requestId: string | null
   readonly retryable: boolean
 
-  constructor(message: string, retryable: boolean) {
+  constructor(
+    message: string,
+    options: {
+      status?: number
+      code?: string | null
+      requestId?: string | null
+      retryable?: boolean
+      cause?: unknown
+    } = {},
+  ) {
     super(message)
-    this.retryable = retryable
+    this.name = 'ApiClientError'
+    this.status = options.status ?? 0
+    this.code = options.code ?? null
+    this.requestId = options.requestId ?? null
+    this.retryable = options.retryable ?? false
+    this.cause = options.cause
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+interface ApiRequestInit extends RequestInit {
+  timeoutMs?: number
+}
+
+async function readErrorPayload(response: Response): Promise<ApiErrorPayload> {
+  try {
+    return (await response.json()) as ApiErrorPayload
+  } catch {
+    return {}
+  }
+}
+
+function clientRequestId() {
+  return globalThis.crypto?.randomUUID?.()
+    ?? `sentinel-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
   const method = init?.method?.toUpperCase() ?? 'GET'
   const attempts = method === 'GET' ? 3 : 1
+  const requestId = clientRequestId()
   let lastError: unknown
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      init.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    )
+    const abortRequest = () => controller.abort()
+    init.signal?.addEventListener('abort', abortRequest, { once: true })
+
     try {
       const headers = new Headers(init?.headers)
       if (!(init?.body instanceof FormData) && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json')
       }
+      headers.set('Accept', 'application/json')
+      headers.set('X-Client-Request-Id', requestId)
       const response = await fetch(`${API_BASE}${path}`, {
         ...init,
         headers,
+        signal: controller.signal,
       })
       if (response.ok) {
         if (response.status === 204) return undefined as T
         return response.json() as Promise<T>
       }
 
-      let detail = `Request failed with status ${response.status}`
-      try {
-        const payload = (await response.json()) as { detail?: string }
-        if (payload.detail) detail = payload.detail
-      } catch {
-        // Preserve the status fallback for non-JSON upstream errors.
-      }
-      throw new HttpFailure(detail, RETRYABLE_STATUS.has(response.status))
+      const payload = await readErrorPayload(response)
+      throw new ApiClientError(
+        payload.detail ?? `Request failed with status ${response.status}`,
+        {
+          status: response.status,
+          code: payload.code,
+          requestId:
+            payload.request_id
+            ?? response.headers.get('x-request-id')
+            ?? requestId,
+          retryable: RETRYABLE_STATUS.has(response.status),
+        },
+      )
     } catch (reason) {
-      lastError = reason
+      const normalizedError =
+        reason instanceof ApiClientError
+          ? reason
+          : new ApiClientError(
+              controller.signal.aborted
+                ? 'The request timed out before the service responded.'
+                : 'Sentinel could not reach the API service.',
+              {
+                requestId,
+                retryable: method === 'GET',
+                cause: reason,
+              },
+            )
+      lastError = normalizedError
       if (
         attempt === attempts - 1
-        || (reason instanceof HttpFailure && !reason.retryable)
-      ) throw reason
+        || !normalizedError.retryable
+      ) throw normalizedError
+    } finally {
+      window.clearTimeout(timeoutId)
+      init.signal?.removeEventListener('abort', abortRequest)
     }
     await new Promise((resolve) => setTimeout(resolve, 750 * 2 ** attempt))
   }
-  throw lastError instanceof Error ? lastError : new Error('Request failed')
+  throw lastError instanceof Error
+    ? lastError
+    : new ApiClientError('Request failed', { requestId })
 }
 
 export function checkHealth() {
