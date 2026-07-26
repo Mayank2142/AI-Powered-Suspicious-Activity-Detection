@@ -24,6 +24,7 @@ def test_health_returns_expected_contract(client):
     assert "phase" in response.json()
 
 
+@pytest.mark.requires_data
 def test_stats_returns_both_datasets_and_string_dates(client):
     response = client.get("/stats")
     assert response.status_code == 200
@@ -42,6 +43,7 @@ def structuring_payload(client):
     return response.json()
 
 
+@pytest.mark.requires_data
 def test_query_response_matches_agent_response_schema(structuring_payload):
     parsed = AgentResponse.model_validate(structuring_payload)
     assert parsed.execution_trace
@@ -49,6 +51,7 @@ def test_query_response_matches_agent_response_schema(structuring_payload):
     assert parsed.plan.steps[-1] == "explanation"
 
 
+@pytest.mark.requires_data
 def test_query_trace_skips_eda_and_graph_for_structuring(structuring_payload):
     skipped = {
         step["tool"]
@@ -63,6 +66,7 @@ def test_query_rejects_empty_and_oversized_payloads(client):
     assert client.post("/query", json={"query": "x" * 2_001}).status_code == 422
 
 
+@pytest.mark.requires_data
 def test_schema_regression_fields_and_durations(structuring_payload):
     for step in structuring_payload["execution_trace"]:
         assert step["duration_ms"] >= 0

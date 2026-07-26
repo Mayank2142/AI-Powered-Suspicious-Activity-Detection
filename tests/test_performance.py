@@ -14,7 +14,7 @@ from tools.rule_engine import run_rules
 from tools.statistical import run_statistical
 
 
-pytestmark = pytest.mark.performance
+pytestmark = [pytest.mark.performance, pytest.mark.requires_data]
 
 
 @pytest.fixture(scope="module")
