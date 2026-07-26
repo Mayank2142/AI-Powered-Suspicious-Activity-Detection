@@ -1,6 +1,7 @@
 import {
   type FormEvent,
   lazy,
+  memo,
   Suspense,
   useEffect,
   useMemo,
@@ -22,7 +23,7 @@ import type {
 } from '../types'
 import '../App.css'
 
-const Plot = lazy(() => import('react-plotly.js'))
+const ReviewerChart = lazy(() => import('../charts/ReviewerChart'))
 
 const EXAMPLES = [
   'Find structuring activity for account 803D95360',
@@ -431,7 +432,7 @@ function EntityDetailDrawer({
   )
 }
 
-function EDACharts({ charts }: { charts: PlotlyChartData[] }) {
+const EDACharts = memo(function EDACharts({ charts }: { charts: PlotlyChartData[] }) {
   if (!charts.length) return null
 
   return (
@@ -447,7 +448,7 @@ function EDACharts({ charts }: { charts: PlotlyChartData[] }) {
         {charts.map((chart) => (
           <article className="chart-card" key={chart.chart_id}>
             <h3>{chart.title}</h3>
-            <Plot
+            <ReviewerChart
               data={chart.data}
               layout={{
                 ...chart.layout,
@@ -477,7 +478,7 @@ function EDACharts({ charts }: { charts: PlotlyChartData[] }) {
       </div>
     </section>
   )
-}
+})
 
 function GraphSummary({ response }: { response: AgentResponse }) {
   const graph = response.graph
@@ -511,7 +512,7 @@ function GraphSummary({ response }: { response: AgentResponse }) {
   )
 }
 
-function ResultsPanel({
+const ResultsPanel = memo(function ResultsPanel({
   response,
   onSelectEntity,
 }: {
@@ -545,7 +546,7 @@ function ResultsPanel({
       <GraphSummary response={response} />
     </main>
   )
-}
+})
 
 function AggregationPanel({
   aggregation,

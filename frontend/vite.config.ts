@@ -48,6 +48,11 @@ export default worker;
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), sitesWorker],
+  build: {
+    // Reviewer charts use a bounded Cartesian-only Plotly bundle. Keep the
+    // warning budget aligned with that deliberate, lazy-loaded payload.
+    chunkSizeWarningLimit: 1500,
+  },
   server: {
     proxy: {
       '/api': {
