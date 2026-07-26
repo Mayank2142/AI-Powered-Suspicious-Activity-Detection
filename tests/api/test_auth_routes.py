@@ -150,6 +150,29 @@ def test_repeated_failures_are_rate_limited_with_retry_guidance():
     assert "password" not in locked.text.lower()
 
 
+def test_forwarding_headers_cannot_bypass_login_rate_limits():
+    with _client(_service(max_failures=2)) as client:
+        first = client.post(
+            "/auth/login",
+            headers={"X-Forwarded-For": "198.51.100.10"},
+            json={
+                "email": "analyst@institution.test",
+                "password": "Incorrect password!",
+            },
+        )
+        second = client.post(
+            "/auth/login",
+            headers={"X-Forwarded-For": "198.51.100.11"},
+            json={
+                "email": "analyst@institution.test",
+                "password": "Incorrect password!",
+            },
+        )
+
+    assert first.status_code == 401
+    assert second.status_code == 429
+
+
 def test_cross_site_login_is_rejected_before_credentials_are_checked():
     with _client() as client:
         response = client.post(

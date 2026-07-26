@@ -4,44 +4,23 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from api.security.origin import enforce_trusted_origin
+from api.security.dependencies import (
+    get_authentication_service,
+    get_cookie_policy,
+)
 from api.security.sessions import (
     SessionCookiePolicy,
-    get_session_cookie_policy,
 )
 from api.services.auth_service import (
     AuthSession,
     AuthenticationService,
-    AuthenticationUnavailable,
     InvalidCredentials,
     LoginRequest,
     TooManyAttempts,
-    get_runtime_authentication_service,
 )
 
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-
-
-def get_authentication_service() -> AuthenticationService:
-    try:
-        return get_runtime_authentication_service()
-    except AuthenticationUnavailable as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Authentication is temporarily unavailable.",
-            headers={"Cache-Control": "private, no-store"},
-        ) from exc
-
-
-def get_cookie_policy() -> SessionCookiePolicy:
-    try:
-        return get_session_cookie_policy()
-    except (TypeError, ValueError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Authentication is temporarily unavailable.",
-            headers={"Cache-Control": "private, no-store"},
-        ) from exc
 
 
 def _protect(response: Response) -> None:
@@ -50,9 +29,9 @@ def _protect(response: Response) -> None:
 
 
 def _client_key(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "").split(",", 1)[0]
-    host = request.client.host if request.client else "unknown"
-    return forwarded.strip() or host
+    # Proxy middleware may replace ``request.client`` with a verified address.
+    # Never trust a caller-supplied forwarding header at this boundary.
+    return request.client.host if request.client else "unknown"
 
 
 @router.post(
