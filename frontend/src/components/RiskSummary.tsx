@@ -1,4 +1,5 @@
 import type { SummaryStats } from '../types'
+import { useCountUp } from '../hooks/useMotion'
 
 interface RiskSummaryProps {
   stats: SummaryStats
@@ -12,6 +13,9 @@ function percent(numerator: number, denominator: number) {
 export default function RiskSummary({ stats }: RiskSummaryProps) {
   const flaggedRate = percent(stats.flagged, stats.total_analyzed)
   const highRiskShare = percent(stats.high_risk, stats.flagged)
+  const analysedCount = useCountUp(stats.total_analyzed)
+  const flaggedCount = useCountUp(stats.flagged)
+  const highRiskCount = useCountUp(stats.high_risk)
 
   return (
     <section className="risk-summary" aria-label="Investigation risk summary">
@@ -24,7 +28,7 @@ export default function RiskSummary({ stats }: RiskSummaryProps) {
         </span>
         <div>
           <span>Transactions analysed</span>
-          <strong>{stats.total_analyzed.toLocaleString()}</strong>
+          <strong>{analysedCount.toLocaleString()}</strong>
           <small>Filtered query slice</small>
         </div>
       </article>
@@ -37,7 +41,7 @@ export default function RiskSummary({ stats }: RiskSummaryProps) {
         </span>
         <div>
           <span>Entities flagged</span>
-          <strong>{stats.flagged.toLocaleString()}</strong>
+          <strong>{flaggedCount.toLocaleString()}</strong>
           <small>{flaggedRate}% of analysed rows</small>
         </div>
       </article>
@@ -50,7 +54,7 @@ export default function RiskSummary({ stats }: RiskSummaryProps) {
         </span>
         <div>
           <span>High risk</span>
-          <strong>{stats.high_risk.toLocaleString()}</strong>
+          <strong>{highRiskCount.toLocaleString()}</strong>
           <small>
             {stats.flagged
               ? `${highRiskShare}% of flagged entities`

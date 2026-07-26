@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ExecutionTrace } from '../App'
+import { ExecutionTrace } from '../components/ExecutionTrace'
 import type { ExecutionStep } from '../types'
 
 vi.mock('react-plotly.js', () => ({

@@ -49,6 +49,7 @@ interface SidebarProps {
   openAlerts: number | null
   isOpen: boolean
   onClose: () => void
+  onNavigate: () => void
 }
 
 export default function Sidebar({
@@ -56,6 +57,7 @@ export default function Sidebar({
   openAlerts,
   isOpen,
   onClose,
+  onNavigate,
 }: SidebarProps) {
   return (
     <aside
@@ -92,7 +94,7 @@ export default function Sidebar({
             end={item.to === '/'}
             className={({ isActive }) => `sidebar-link${isActive ? ' sidebar-link--active' : ''}`}
             title={item.label}
-            onClick={onClose}
+            onClick={onNavigate}
           >
             <span className="sidebar-link__icon"><NavigationIcon name={item.icon} /></span>
             <span>{item.label}</span>
@@ -107,7 +109,7 @@ export default function Sidebar({
             to={item.to}
             className={({ isActive }) => `sidebar-link${isActive ? ' sidebar-link--active' : ''}`}
             title={item.label}
-            onClick={onClose}
+            onClick={onNavigate}
           >
             <span className="sidebar-link__icon"><NavigationIcon name={item.icon} /></span>
             <span>{item.label}</span>

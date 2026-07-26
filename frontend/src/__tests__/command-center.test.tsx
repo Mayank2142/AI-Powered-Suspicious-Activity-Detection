@@ -18,7 +18,9 @@ vi.mock('../api', () => ({
   exportSar: vi.fn(),
   exportTrace: vi.fn(),
   getDatasets: vi.fn(),
+  inspectDataset: vi.fn(),
   runQuery: vi.fn(),
+  uploadDataset: vi.fn(),
 }))
 vi.mock('../store/investigations', () => ({
   saveInvestigation: vi.fn(),
@@ -81,5 +83,22 @@ describe('Command center analyst workflow', () => {
       'Investigation service unavailable',
     )
     expect((query as HTMLTextAreaElement).value).toBe('Find layering')
+  })
+
+  it('opens the governed dataset upload from the command center', async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <CommandCenter />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Upload dataset' }))
+
+    expect(
+      screen.getByRole('dialog', { name: 'Upload dataset' }),
+    ).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Close upload' }))
+    expect(screen.queryByRole('dialog', { name: 'Upload dataset' })).toBeNull()
   })
 })

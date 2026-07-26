@@ -7,17 +7,19 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { checkHealth, exportSar, getDatasets, runQuery } from '../api'
 import { ExecutionTrace } from '../components/ExecutionTrace'
 import ExportPanel from '../components/ExportPanel'
 import RiskContributionBar from '../components/RiskContributionBar'
 import RiskSummary from '../components/RiskSummary'
 import TransactionEvidenceList from '../components/TransactionEvidenceList'
+import UploadModal from '../components/UploadModal'
 import { saveInvestigation } from '../store/investigations'
 import type {
   AgentResponse,
   ApiStatus,
+  DatasetUploadResult,
   FlaggedEntity,
   PlotlyChartData,
 } from '../types'
@@ -82,6 +84,7 @@ interface QueryPanelProps {
   onQueryChange: (value: string) => void
   onSubmit: (event: FormEvent) => void
   onExample: (query: string) => void
+  onUploadDataset: () => void
 }
 
 function QueryPanel({
@@ -90,12 +93,19 @@ function QueryPanel({
   onQueryChange,
   onSubmit,
   onExample,
+  onUploadDataset,
 }: QueryPanelProps) {
   return (
-    <section className="query-hero" aria-labelledby="query-heading">
+    <section
+      className={`query-hero${loading ? ' query-hero--active' : ''}`}
+      aria-labelledby="query-heading"
+    >
       <div className="hero-copy">
         <span className="eyebrow">Dynamic AML investigation</span>
-        <h1 id="query-heading">Ask the data.<br />Trace every decision.</h1>
+        <h1 id="query-heading">
+          Same transactions.<br />
+          <em>Clearer risk.</em>
+        </h1>
         <p>
           Describe an entity, pattern, or time window. Sentinel selects the
           smallest defensible toolchain and shows exactly what ran.
@@ -103,7 +113,18 @@ function QueryPanel({
       </div>
 
       <form className="query-box" onSubmit={onSubmit}>
-        <label htmlFor="analyst-query">Investigation query</label>
+        <div className="query-box__header">
+          <label htmlFor="analyst-query">Investigation query</label>
+          <button
+            type="button"
+            className="query-upload-action"
+            onClick={onUploadDataset}
+            disabled={loading}
+          >
+            <span aria-hidden="true">+</span>
+            Upload dataset
+          </button>
+        </div>
         <div className="query-input-row">
           <textarea
             id="analyst-query"
@@ -113,7 +134,11 @@ function QueryPanel({
             rows={3}
             disabled={loading}
           />
-          <button type="submit" disabled={loading || !query.trim()}>
+          <button
+            type="submit"
+            className="button-primary"
+            disabled={loading || !query.trim()}
+          >
             {loading ? (
               <>
                 <span className="spinner" aria-hidden="true" />
@@ -122,7 +147,9 @@ function QueryPanel({
             ) : (
               <>
                 Run analysis
-                <span aria-hidden="true">↗</span>
+                <span className="button-arrow" aria-hidden="true">
+                  <span>↗</span><span>↗</span>
+                </span>
               </>
             )}
           </button>
@@ -295,8 +322,8 @@ function FlaggedTable({
                     <div className="rule-flags">
                       {entity.rule_flags.length
                         ? entity.rule_flags.slice(0, 2).map((flag) => (
-                            <span key={flag}>{formatLabel(flag)}</span>
-                          ))
+                          <span key={flag}>{formatLabel(flag)}</span>
+                        ))
                         : '—'}
                     </div>
                   </td>
@@ -393,6 +420,15 @@ function EntityDetailDrawer({
             <strong>{formatLabel(entity.risk_label)} risk</strong>
             <span>{ACTION_LABELS[entity.escalation_action]}</span>
           </div>
+        </div>
+        <div
+          className={`escalation-segments escalation-segments--${entity.escalation_action}`}
+          role="group"
+          aria-label={`Recommended action: ${ACTION_LABELS[entity.escalation_action]}`}
+        >
+          <span>Monitor</span>
+          <span>Review</span>
+          <span>Report</span>
         </div>
         <dl className="score-grid">
           <div><dt>Rules</dt><dd>{(entity.rule_score * 100).toFixed(0)}</dd></div>
@@ -607,6 +643,8 @@ function CommandCenter() {
   const [selectedEntity, setSelectedEntity] = useState<FlaggedEntity | null>(null)
   const [error, setError] = useState('')
   const [activeDataset, setActiveDataset] = useState<{ id: string; name: string } | null>(null)
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploadedDataset, setUploadedDataset] = useState<DatasetUploadResult | null>(null)
 
   useEffect(() => {
     checkHealth()
@@ -670,6 +708,21 @@ function CommandCenter() {
     void submitQuery(example)
   }
 
+  function handleDatasetUploaded(result: DatasetUploadResult) {
+    setShowUpload(false)
+    setUploadedDataset(result)
+    getDatasets()
+      .then((datasets) => {
+        const active = datasets.find(
+          (dataset) => dataset.dataset_type === 'primary' && dataset.is_active,
+        )
+        setActiveDataset(
+          active ? { id: active.dataset_id, name: active.display_name } : null,
+        )
+      })
+      .catch(() => undefined)
+  }
+
   return (
     <div className="command-center">
       <Header status={apiStatus} datasetName={activeDataset?.name ?? 'No active dataset'} />
@@ -679,7 +732,27 @@ function CommandCenter() {
         onQueryChange={setQuery}
         onSubmit={handleSubmit}
         onExample={handleExample}
+        onUploadDataset={() => setShowUpload(true)}
       />
+      {uploadedDataset ? (
+        <div className="query-upload-notice" role="status">
+          <div>
+            <strong>{uploadedDataset.display_name} uploaded successfully</strong>
+            <span>
+              {uploadedDataset.row_count.toLocaleString()} rows were validated in an
+              isolated workspace.
+            </span>
+          </div>
+          <Link to="/datasets">Review and activate</Link>
+          <button
+            type="button"
+            aria-label="Dismiss upload confirmation"
+            onClick={() => setUploadedDataset(null)}
+          >
+            {'\u00d7'}
+          </button>
+        </div>
+      ) : null}
       {error && (
         <div className="error-banner" role="alert">
           <span aria-hidden="true">!</span>
@@ -707,6 +780,12 @@ function CommandCenter() {
         investigationId={response?.investigation_id}
         onClose={() => setSelectedEntity(null)}
       />
+      {showUpload ? (
+        <UploadModal
+          onClose={() => setShowUpload(false)}
+          onUploaded={handleDatasetUploaded}
+        />
+      ) : null}
       <footer>
         <span>Sentinel AML · Decision-support system</span>
         <span>Human review required before reporting</span>
