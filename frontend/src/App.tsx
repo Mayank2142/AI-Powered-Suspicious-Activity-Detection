@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, useLocation } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router-dom'
 import { checkHealth, getDatasets, getQueueSummary } from './api'
+import { AuthProvider } from './auth/AuthProvider'
+import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
+import Login from './pages/Login'
 import AppRoutes from './router/AppRoutes'
 import './App.css'
 import './Workspace.css'
@@ -106,7 +114,19 @@ function ApplicationShell() {
 export default function App() {
   return (
     <BrowserRouter>
-      <ApplicationShell />
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/*"
+            element={(
+              <ProtectedRoute>
+                <ApplicationShell />
+              </ProtectedRoute>
+            )}
+          />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

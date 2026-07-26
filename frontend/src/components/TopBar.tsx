@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { resolveWorkspaceRoute } from '../router/manifest'
 import type { ApiStatus } from '../types'
 
@@ -23,6 +24,15 @@ export default function TopBar({
 }: TopBarProps) {
   const location = useLocation()
   const page = resolveWorkspaceRoute(location.pathname)
+  const { session, signOut } = useAuth()
+  const user = session?.user
+  const initials = user?.display_name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'AML'
+  const role = user?.roles[0]?.replaceAll('_', ' ') ?? 'AML reviewer'
 
   return (
     <header className="workspace-topbar">
@@ -58,10 +68,19 @@ export default function TopBar({
           <span className="status-dot" aria-hidden="true" />
           {STATUS_LABELS[apiStatus]}
         </span>
-        <span className="topbar-reviewer" title="Signed in as Mayank Gupta">
-          <span aria-hidden="true">MG</span>
-          <span><strong>Mayank Gupta</strong><small>AML reviewer</small></span>
-        </span>
+        <button
+          type="button"
+          className="topbar-reviewer"
+          title={`Sign out ${user?.display_name ?? 'reviewer'}`}
+          aria-label={`Sign out ${user?.display_name ?? 'reviewer'}`}
+          onClick={() => void signOut()}
+        >
+          <span aria-hidden="true">{initials}</span>
+          <span>
+            <strong>{user?.display_name ?? 'AML reviewer'}</strong>
+            <small>{role}</small>
+          </span>
+        </button>
       </div>
     </header>
   )
