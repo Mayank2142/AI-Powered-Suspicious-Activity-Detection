@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import duckdb
+import pytest
 from fastapi.testclient import TestClient
 
 from agent.models import (
@@ -88,6 +89,7 @@ def test_workflow_endpoints_and_audit_read_only(tmp_path, monkeypatch):
         assert prohibited_filing.status_code == 422
 
 
+@pytest.mark.requires_data
 def test_governance_endpoints_expose_effective_read_only_state():
     with TestClient(app) as client:
         policy = client.get("/policy")

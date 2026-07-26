@@ -5,7 +5,7 @@ import pytest
 from agent.runner import AgentRunner
 
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.requires_data]
 
 
 def test_structuring_pipeline_end_to_end():

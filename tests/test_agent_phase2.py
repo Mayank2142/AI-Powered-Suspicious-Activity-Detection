@@ -122,6 +122,7 @@ def phase2_runner() -> AgentRunner:
     ("query", "expected_steps", "expected_skips"),
     CANONICAL_CASES,
 )
+@pytest.mark.requires_data
 def test_canonical_queries_have_required_distinct_plans(
     phase2_runner,
     query,
@@ -142,6 +143,7 @@ def test_canonical_queries_have_required_distinct_plans(
     assert all(item.reason for item in response.execution_trace)
 
 
+@pytest.mark.requires_data
 def test_canonical_step_lists_are_all_different(phase2_runner):
     plans = {
         tuple(phase2_runner.run(query).plan.steps)
@@ -185,6 +187,7 @@ def test_graph_is_selected_only_for_graph_pattern():
     assert "graph_tool" not in structuring.steps
 
 
+@pytest.mark.requires_data
 def test_response_is_schema_complete_for_empty_entity(phase2_runner):
     response = phase2_runner.run("Is customer ID 4521 suspicious?")
     assert response.summary_stats.total_analyzed <= 25
@@ -203,6 +206,7 @@ def test_response_is_schema_complete_for_empty_entity(phase2_runner):
     )
 
 
+@pytest.mark.requires_data
 def test_query_api_contract(phase2_runner):
     with TestClient(app) as client:
         app.state.agent_runner = phase2_runner

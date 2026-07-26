@@ -11,6 +11,7 @@ from tools.data_loader import (
 )
 
 
+@pytest.mark.requires_data
 def test_saml_knowledge_table_exists():
     conn = get_db_connection()
     try:
@@ -19,6 +20,7 @@ def test_saml_knowledge_table_exists():
         conn.close()
 
 
+@pytest.mark.requires_data
 def test_get_saml_summary_stats_returns_expected_keys():
     stats = get_saml_summary_stats()
     assert {
@@ -34,6 +36,7 @@ def test_load_rejects_inverted_date_range():
         load(date_range=("2022-09-18", "2022-09-01"), limit=1)
 
 
+@pytest.mark.requires_data
 def test_load_with_entity_id_returns_matching_rows_only():
     result = load(entity_id="803D95360", limit=100)
     assert len(result) > 0

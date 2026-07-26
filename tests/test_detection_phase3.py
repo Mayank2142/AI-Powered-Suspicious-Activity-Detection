@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -122,6 +123,7 @@ def test_statistical_scoring_uses_supplied_iqr_bounds():
     assert scored["stat_score"].between(0, 1).all()
 
 
+@pytest.mark.requires_data
 def test_persisted_saml_normal_iqr_baseline_is_available():
     lower, upper = get_saml_iqr_bounds()
     assert lower < upper
@@ -158,6 +160,7 @@ def test_isolation_forest_scores_obvious_outlier_higher():
     assert scored.iloc[1]["anomaly_label"] == 1
 
 
+@pytest.mark.requires_data
 def test_real_saml_model_trains_on_50000_normal_rows():
     bundle = get_model_bundle()
     assert bundle.training_rows == 50_000
