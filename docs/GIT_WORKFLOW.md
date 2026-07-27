@@ -86,8 +86,6 @@ No push is automatic.
 - Mayank pushes only `mayank`.
 - Devesh pushes only `devesh`.
 - `main` is pushed only after an explicitly approved merge.
-- Codex pushes only when the instruction names the branch, contributor, and
-  authorization to push.
 
 ## Merge policy
 
