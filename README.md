@@ -38,17 +38,18 @@ An agentic AML investigation workspace that converts a natural-language question
 
 ## Live deployment
 
-| Service | Production URL |
-| --- | --- |
-| Sentinel AML frontend | [https://sentinel-aml-gamma.vercel.app](https://sentinel-aml-gamma.vercel.app) |
-| Hugging Face backend | [https://mayank2142-sentinel-aml-api.hf.space](https://mayank2142-sentinel-aml-api.hf.space) |
-| Interactive API documentation | [https://mayank2142-sentinel-aml-api.hf.space/docs](https://mayank2142-sentinel-aml-api.hf.space/docs) |
-| Backend health check | [https://mayank2142-sentinel-aml-api.hf.space/health](https://mayank2142-sentinel-aml-api.hf.space/health) |
+| Deployment boundary | Platform | Production URL |
+| --- | --- | --- |
+| **Frontend only** — React, TypeScript, Vite, static assets | **Vercel** | [https://sentinel-aml-gamma.vercel.app](https://sentinel-aml-gamma.vercel.app) |
+| **Backend only** — FastAPI, agent orchestration, AML/ML tools, DuckDB | **Hugging Face Spaces** | [https://mayank2142-sentinel-aml-api.hf.space](https://mayank2142-sentinel-aml-api.hf.space) |
+| Interactive API documentation | Hugging Face Spaces | [https://mayank2142-sentinel-aml-api.hf.space/docs](https://mayank2142-sentinel-aml-api.hf.space/docs) |
+| Backend health check | Hugging Face Spaces | [https://mayank2142-sentinel-aml-api.hf.space/health](https://mayank2142-sentinel-aml-api.hf.space/health) |
 
-The Vercel application proxies `/api/*` requests to the Hugging Face Space,
-keeping the browser on a single production origin. The free Space may sleep
-after inactivity; its governed seed database is restored automatically when
-the service restarts.
+Vercel builds only the [`frontend/`](frontend/) directory. It does **not**
+package or execute the Python backend. The frontend proxies `/api/*` requests
+to the Hugging Face Space, keeping the browser on a single production origin.
+The free Space may sleep after inactivity; its governed seed database is
+restored automatically when the service restarts.
 
 ## Product experience
 
